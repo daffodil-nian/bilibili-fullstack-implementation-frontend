@@ -289,9 +289,81 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   border-bottom: 8px solid white;
 }
 
-.nav-avatar-container:hover .login-tooltip {
+.nav-avatar-container:hover .login-tooltip,
+.nav-avatar-container:hover .user-panel {
   opacity: 1;
   visibility: visible;
+}
+
+/* 已登录：个人面板（定位方式对齐 login-tooltip） */
+.user-panel {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 20px 16px 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 100;
+}
+
+.user-panel::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+}
+
+.user-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.user-panel-nickname {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #18191c;
+}
+
+.user-panel-uid {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9499a0;
+}
+
+.user-panel-menu {
+  padding-top: 8px;
+}
+
+.user-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #18191c;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f1f2f3;
+  }
 }
 
 .tooltip-title {

@@ -20,10 +20,8 @@ export interface LoginParams {
   password: string
 }
 
-/** 登录响应 */
-export interface LoginResult {
-  userInfo: UserBaseInfo
-}
+/** 登录响应：data 即为用户信息 */
+export type LoginResult = UserBaseInfo
 
 /** 注册请求参数 */
 export interface RegisterParams {
@@ -36,17 +34,18 @@ export interface RegisterParams {
 
 /** 用户登录 */
 export function userLogin(params: LoginParams) {
-  return post(urls.userLogin, params)
+  return post(urls.userLogin, params) as Promise<ApiResponse<LoginResult>>
 }
 
 /** 用户注册 */
 export function userRegister(params: RegisterParams) {
-  return post(urls.userRegister, params)
+  // 若后端注册成功也返回用户信息，可直接当登录态用
+  return post(urls.userRegister, params) as Promise<ApiResponse<UserBaseInfo | null>>
 }
 
 /** 用户登出 */
 export function userLogout() {
-  return post(urls.userLogout)
+  return post(urls.userLogout) as Promise<ApiResponse>
 }
 
 // ==================== 默认导出 ====================

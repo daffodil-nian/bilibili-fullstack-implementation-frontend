@@ -3,7 +3,7 @@ const prefix = ''
 
 export default {
   // 和用户相关的接口
-  userLogin: `${prefix}/api/auth/login`,
-  userRegister: `${prefix}/api/auth/register`,
-  userLogout: `${prefix}/api/auth/logout`,
+  userLogin: `/api/auth/login`,
+  userRegister: `/api/auth/register`,
+  userLogout: `/api/auth/logout`,
 }

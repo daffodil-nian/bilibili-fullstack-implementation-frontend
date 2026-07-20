@@ -27,13 +27,18 @@
 
     <!-- 3. 头像与登录/注册弹窗交互核心 -->
     <div class="nav-avatar-container">
-      <!-- 点击头像：默认打开登录界面 ('1') -->
-      <a-avatar size="large" class="nav-avatar" @click="showModel('1')">
-        登录
+      <!-- 未登录显示「登录」文字；已登录显示头像图 -->
+      <a-avatar
+        :src="currentUser ? (currentUser.avatar || defaultAvatar) : undefined"
+        size="large"
+        class="nav-avatar"
+        @click="onAvatarClick"
+      >
+        {{ currentUser ? '' : '登录' }}
       </a-avatar>
-      
-      <!-- 鼠标悬浮的快捷登录提示框 -->
-      <div class="login-tooltip">
+
+      <!-- 未登录：悬浮引导登录 -->
+      <div v-if="!currentUser" class="login-tooltip">
         <div class="tooltip-title">登录后你可以:</div>
         <div class="tooltip-content">
           <div class="tooltip-item">
@@ -56,13 +61,31 @@
         <div class="tooltip-button" @click="showModel('1')">立即登录</div>
         <div class="tooltip-bottom">
           首次使用？
-          <!-- 点击点我注册：直接打开注册界面 ('3') -->
           <span class="register" @click="showModel('3')">点我注册</span>
         </div>
       </div>
 
-      <!-- 登录/注册二合一模态弹窗 -->
-      <div class="popup-page">
+      <!-- 已登录：悬浮个人面板 -->
+      <div v-else class="user-panel">
+        <div class="user-panel-header">
+          <a-avatar :src="currentUser.avatar || defaultAvatar" :size="64" />
+          <div class="user-panel-nickname">{{ currentUser.nickname }}</div>
+          <div class="user-panel-uid">UID: {{ currentUser.uid }}</div>
+        </div>
+        <div class="user-panel-menu">
+          <div class="user-panel-item" @click="goSpace">
+            <UserOutlined />
+            <span>个人中心</span>
+          </div>
+          <div class="user-panel-item" @click="handleLogout">
+            <LogoutOutlined />
+            <span>退出登录</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 登录/注册 Modal：仅未登录时需要 -->
+      <div v-if="!currentUser" class="popup-page">
         <a-modal 
           v-model:open="open" 
           :title="isRegisterMode ? '官方账号注册' : '扫描二维码登录'" 
@@ -196,12 +219,22 @@ import {
   AliwangwangOutlined, PlayCircleFilled, VideoCameraFilled,
   MessageOutlined, StarOutlined, ClockCircleOutlined, 
   BulbOutlined, SearchOutlined, UploadOutlined,
-  EyeOutlined, EyeInvisibleOutlined
+  EyeOutlined, EyeInvisibleOutlined,
+  UserOutlined, LogoutOutlined
 } from '@ant-design/icons-vue'
-import { ref, reactive, computed,onMounted } from 'vue';
+import defaultAvatar from '../../assets/avatar/default.png'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { userLogin, userRegister } from '../../services/api'
+import { saveUserInfo, getUserInfo, clearUserInfo } from '../../services/userStorage'
+import type { UserBaseInfo } from '../../services/types'
+
+const router = useRouter()
 
 // 基础变量
 const userName = ref<string>('');
+const currentUser = ref<UserBaseInfo | null>(null)
 const open = ref<boolean>(false);
 const activeKey = ref<string>('1'); // '1': 密码登录, '2': 短信登录, '3': 账号注册
 const qrcodeUrl = ref<string>('https://im.qq.com/'); // 二维码解析地址
@@ -210,6 +243,9 @@ const qrcodeUrl = ref<string>('https://im.qq.com/'); // 二维码解析地址
 const themeColor = ref('#26BAEF');
 
 onMounted(() => {
+  // 刷新后从 localStorage 恢复登录用户
+  currentUser.value = getUserInfo()
+
   // 2. 获取文档根节点（也就是 :root）的计算样式
   const rootStyles = window.getComputedStyle(document.documentElement);
   
@@ -236,6 +272,27 @@ const showModel = (targetTab: string = '1') => {
   open.value = true;
 };
 
+/** 未登录点头像 → 登录框；已登录点头像 → 个人空间 */
+const onAvatarClick = () => {
+  if (!currentUser.value) {
+    showModel('1')
+    return
+  }
+  goSpace()
+}
+
+const goSpace = () => {
+  if (!currentUser.value?.uid) return
+ const route= router.resolve(`/space/${currentUser.value.uid}`)
+ window.open(route.href,'_blank')
+}
+
+const handleLogout = () => {
+  clearUserInfo()
+  currentUser.value = null
+  message.success('已退出登录')
+}
+
 // 密码登录表单
 const pwdForm = reactive({
   account: '',
@@ -258,35 +315,81 @@ const registerForm = reactive({
   showConfirmPwd: false
 });
 
-// 处理底部主按钮（确定/登录/注册）点击事件
-const handleOk = (e: MouseEvent) => {
-  console.log('点击了主提交按钮事件:', e);
+// 处理底部主按钮（确定/登录/注册）
+// 空账号/空密码等校验交给后端 AssertUtil，前端只负责弹出后端返回的 msg
+const handleOk = async () => {
   if (isRegisterMode.value) {
-    // 1. 执行注册提交逻辑
-    if (!registerForm.username || !registerForm.password) {
-      alert('请填写完整的注册信息！');
-      return;
+    // 仅前端能判断的「两次密码是否一致」留在本地；其余文案以后端为准
+    if (
+      registerForm.password &&
+      registerForm.confirmPassword &&
+      registerForm.password !== registerForm.confirmPassword
+    ) {
+      message.warning('两次输入的密码不一致，请重新检查！')
+      return Promise.reject()
     }
-    if (registerForm.password !== registerForm.confirmPassword) {
-      alert('两次输入的密码不一致，请重新检查！');
-      return;
-    }
-    console.log('【发起注册请求】数据提交中:', (registerForm));
 
-    //这里要调用登录注册接口
+    try {
+      const body = await userRegister({
+        username: registerForm.username,
+        password: registerForm.password,
+        checkPassword: registerForm.confirmPassword,
+      })
+      message.success(body.msg || '注册成功')
 
-    // 注册成功后的业务逻辑...
-  } else {
-    // 2. 执行登录提交逻辑
-    if (activeKey.value === '1') {
-      console.log('【账号密码登录】验证中:', (pwdForm));
-    } else {
-      console.log('【验证码登录】验证中:', (smsForm));
+      // 后端若直接返回用户信息 → 当作已登录
+      if (body.data && typeof body.data === 'object' && 'uid' in body.data) {
+        saveUserInfo(body.data)
+        currentUser.value = body.data
+        open.value = false
+        resetRegisterForm()
+        return
+      }
+
+      // 否则：切到密码登录，账号预填，方便用户马上登录
+      pwdForm.account = registerForm.username
+      pwdForm.password = ''
+      resetRegisterForm()
+      activeKey.value = '1'
+    } catch {
+      // 错误原因已在 request.ts 用 message.error 弹出
+      return Promise.reject()
     }
+    return
   }
-  // 模拟请求成功后关闭弹窗
-  open.value = false;
+
+  // 密码登录：直接请求，后端 AssertUtil 的 msg 由 request 层弹出
+  if (activeKey.value === '1') {
+    try {
+      const body = await userLogin({
+        username: pwdForm.account,
+        password: pwdForm.password,
+      })
+      // 把用户信息存进 localStorage，刷新后还能读到
+      if (body.data) {
+        saveUserInfo(body.data)
+        currentUser.value = body.data
+      }
+      message.success(body.msg || '登录成功')
+      open.value = false
+      console.log(body)
+    } catch {
+      return Promise.reject()
+    }
+    return
+  }
+
+  message.info('短信登录暂未接入')
+  return Promise.reject()
 };
+
+const resetRegisterForm = () => {
+  registerForm.username = ''
+  registerForm.password = ''
+  registerForm.confirmPassword = ''
+  registerForm.showPwd = false
+  registerForm.showConfirmPwd = false
+}
 
 // 处理底部辅助按钮（取消/切换状态）点击事件
 const handleCancel = () => {
