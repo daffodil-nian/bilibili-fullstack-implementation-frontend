@@ -7,7 +7,7 @@
   }
  }"
  >
-  <div class="nav-box">
+  <div class="nav-box" :class="navThemeClass">
     <!-- 1. 左侧导航区域 -->
     <div class="nav-left">
       <div v-for="item in nav_left" :key="item.title" class="nav-item">
@@ -26,8 +26,8 @@
     </div>
 
     <!-- 3. 头像与登录/注册弹窗交互核心 -->
-    <div class="nav-avatar-container">
-      <!-- 未登录显示「登录」文字；已登录显示头像图 -->
+    <div class="nav-avatar-container" :class="{ 'is-logged-in': !!currentUser }">
+      <!-- 未登录显示「登录」文字；已登录显示头像图（悬停会放大并压在面板顶上） -->
       <a-avatar
         :src="currentUser ? (currentUser.avatar || defaultAvatar) : undefined"
         size="large"
@@ -65,12 +65,28 @@
         </div>
       </div>
 
-      <!-- 已登录：悬浮个人面板 -->
+      <!-- 已登录：悬浮个人面板（顶上头像由放大后的 nav-avatar 充当） -->
       <div v-else class="user-panel">
         <div class="user-panel-header">
-          <a-avatar :src="currentUser.avatar || defaultAvatar" :size="64" />
           <div class="user-panel-nickname">{{ currentUser.nickname }}</div>
-          <div class="user-panel-uid">UID: {{ currentUser.uid }}</div>
+          <div class="user-panel-currency">
+            <span>硬币: {{ currentUser.userWalletResp?.coin ?? 0 }}</span>
+            <span>B币: {{ currentUser.userWalletResp?.bcoin ?? 0 }}</span>
+          </div>
+          <div class="user-panel-stats">
+            <div class="stat-item">
+              <div class="stat-num">{{ currentUser.userFollowInfo.followCount }}</div>
+              <div class="stat-label">关注</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">{{ currentUser.userFollowInfo.fansCount }}</div>
+              <div class="stat-label">粉丝</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">0</div>
+              <div class="stat-label">动态</div>
+            </div>
+          </div>
         </div>
         <div class="user-panel-menu">
           <div class="user-panel-item" @click="goSpace">
@@ -223,12 +239,19 @@ import {
   UserOutlined, LogoutOutlined
 } from '@ant-design/icons-vue'
 import defaultAvatar from '../../assets/avatar/default.png'
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { userLogin, userRegister } from '../../services/api'
 import { saveUserInfo, getUserInfo, clearUserInfo } from '../../services/userStorage'
 import type { UserBaseInfo } from '../../services/types'
+
+const props = withDefaults(defineProps<{
+  /** 首页叠在头图上时开启：滚动前白字，滚过后黑字 */
+  withBanner?: boolean
+}>(), {
+  withBanner: false,
+})
 
 const router = useRouter()
 
@@ -241,6 +264,18 @@ const qrcodeUrl = ref<string>('https://im.qq.com/'); // 二维码解析地址
 
 
 const themeColor = ref('#26BAEF');
+const BANNER_HEIGHT = 130
+const isOverBanner = ref(props.withBanner)
+
+const navThemeClass = computed(() => {
+  if (!props.withBanner) return 'nav-dark'
+  return isOverBanner.value ? 'nav-light' : 'nav-dark'
+})
+
+const onScroll = () => {
+  if (!props.withBanner) return
+  isOverBanner.value = window.scrollY < BANNER_HEIGHT
+}
 
 onMounted(() => {
   // 刷新后从 localStorage 恢复登录用户
@@ -256,7 +291,18 @@ onMounted(() => {
   if (colorFromCss) {
     themeColor.value = colorFromCss;
   }
+
+  if (props.withBanner) {
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+  } else {
+    isOverBanner.value = false
+  }
 });
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+})
 
 interface DataItem {
   title: string;

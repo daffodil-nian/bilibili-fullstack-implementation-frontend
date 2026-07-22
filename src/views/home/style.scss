@@ -1,0 +1,16 @@
+.home-top {
+  position: relative;
+}
+
+.home-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.home-body {
+  min-height: 100vh;
+  background: #f1f2f3;
+}

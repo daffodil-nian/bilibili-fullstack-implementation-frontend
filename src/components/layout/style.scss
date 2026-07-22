@@ -185,11 +185,55 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   align-items: center;
   justify-content:space-between;
   width: 100%;
-  height: 80px;        /* B站真实高度 */
+  height: 64px;
   padding: 0 24px;
   margin: 0 auto;
   box-sizing: border-box;
   white-space: nowrap;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+}
+
+/* 叠在头图上：透明底 + 白字 */
+.nav-box.nav-light {
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+
+  .nav-text,
+  .nav-icon,
+  .nav-search-icon {
+    color: #fff;
+  }
+
+  .nav-icon:hover {
+    color: #fff;
+    opacity: 0.85;
+  }
+
+  :deep(.nav-search-input) {
+    background: rgba(255, 255, 255, 0.88) !important;
+  }
+
+  :deep(.nav-search-input .ant-input) {
+    color: #18191c;
+  }
+}
+
+/* 滚过 / 无头图页：白底 + 黑字 */
+.nav-box.nav-dark {
+  background: #fff;
+  color: #18191c;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+  .nav-text,
+  .nav-icon,
+  .nav-search-icon {
+    color: #18191c;
+  }
+
+  .nav-icon:hover {
+    color: #fb7299;
+  }
 }
 
 .nav-left,.nav-right{
@@ -251,6 +295,10 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   min-width: 40px;
   margin-right: 10px;
   cursor: pointer;
+  transition: transform 0.25s ease;
+  transform-origin: center top;
+  position: relative;
+  z-index: 101;
 }
 
 /* 新增的登录提示弹窗样式 */
@@ -258,6 +306,8 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   position: relative;
   display: inline-block;
   cursor: pointer;
+  // 给放大后的头像留出一点向下的空间，避免被顶栏裁切
+  padding-bottom: 4px;
 }
 
 .login-tooltip {
@@ -272,7 +322,7 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   padding: 16px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s, visibility 0.3s;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
   z-index: 100;
 }
 
@@ -289,58 +339,99 @@ body, .login-tooltip, .tooltip-title, .tooltip-text, .register {
   border-bottom: 8px solid white;
 }
 
-.nav-avatar-container:hover .login-tooltip,
-.nav-avatar-container:hover .user-panel {
+/* 未登录：悬停直接出引导面板 */
+.nav-avatar-container:not(.is-logged-in):hover .login-tooltip {
   opacity: 1;
   visibility: visible;
 }
 
-/* 已登录：个人面板（定位方式对齐 login-tooltip） */
+/* ========== 已登录：先放大头像，再出个人面板（仿 B 站） ========== */
+.nav-avatar-container.is-logged-in:hover .nav-avatar {
+  transform: scale(2) translateY(10px) translateX(-3px);
+} //往下移动20px
+
 .user-panel {
   position: absolute;
-  top: 50px;
+  // 40px 头像 * 1.75 ≈ 70，面板从放大头像下半部落下来，头像压在上沿
+  top: 66px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-53%);
   width: 280px;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 20px 16px 12px;
+  // 上内边距留给压在面板上的大头像
+  padding: 42px 16px 12px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s, visibility 0.3s;
+  // 比头像放大稍晚出现
+  transition: opacity 0.2s ease 0.18s, visibility 0.2s ease 0.18s;
   z-index: 100;
+  pointer-events: none;
 }
 
-.user-panel::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid white;
+.nav-avatar-container.is-logged-in:hover .user-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+// 移出时面板立刻藏、头像缩回，避免「面板还在、头像已缩」的错位感
+.nav-avatar-container.is-logged-in:not(:hover) .user-panel {
+  transition-delay: 0s;
 }
 
 .user-panel-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .user-panel-nickname {
-  margin-top: 10px;
+  margin-top: 0;
   font-size: 16px;
   font-weight: 600;
   color: #18191c;
+  line-height: 1.4;
 }
 
-.user-panel-uid {
+.user-panel-currency {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #9499a0;
+}
+
+.user-panel-stats {
+  display: flex;
+  width: 100%;
+  margin-top: 14px;
+  justify-content: space-around;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+  cursor: pointer;
+
+  &:hover .stat-num {
+    color: #00a1d6;
+  }
+}
+
+.stat-num {
+  font-size: 16px;
+  font-weight: 600;
+  color: #18191c;
+  line-height: 1.2;
+}
+
+.stat-label {
   margin-top: 4px;
   font-size: 12px;
   color: #9499a0;

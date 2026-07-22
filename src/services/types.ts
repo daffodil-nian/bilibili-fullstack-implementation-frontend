@@ -10,5 +10,24 @@ export type UserBaseInfo = {
   activeStatus: number
   avatar: string | null
   ipInfo: Record<string, unknown> | null
+  signature: string
   createTime: string
+  userFollowInfo:UserFollowInfo
+  userLvInfo:UserLvInfo
+  userWalletResp:UserWalletInfo
+}
+
+type UserFollowInfo={
+  followCount:number,
+  fansCount:number
+}
+type UserLvInfo={
+  level:number,
+  needAddExp:number,
+  totalExp:number,
+  levelName:string 
+}
+type UserWalletInfo={
+  coin:number,
+  bcoin:number
 }
