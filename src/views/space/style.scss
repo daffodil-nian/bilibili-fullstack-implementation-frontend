@@ -47,11 +47,17 @@
   box-sizing: border-box;
   // 底部渐变，保证白字可读
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.45));
-  pointer-events: none;
+  // pointer-events: none;
 
   button {
     pointer-events: auto;
   }
+}
+
+
+.lv_picture{
+  width: 37px;
+  height: auto;
 }
 
 .space-profile-left {
@@ -60,17 +66,71 @@
   gap: 16px;
   min-width: 0;
 }
+.wrap {
+  position: relative; /* 核心：作为遮罩绝对定位的父参照物 */
+  margin-left:25px;
+  margin-right: 20px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  overflow: hidden; 
+  cursor: pointer;
+}
 
 .space-avatar {
   flex-shrink: 0;
   border: 2px solid rgba(255, 255, 255, 0.9);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  // width: 100%;
+  // height: 100%;
+  // object-fit: cover;
+  // /* 过渡动画写在原生样式，不要写在hover */
+  // transition: transform 0.25s ease;
 }
 
+/* 遮罩层 默认隐藏 */
+.change-avatar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight:bold;
+  /* 文字水平垂直居中 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+/* hover写在父容器wrap，鼠标悬浮整个头像区域触发效果 */
+.wrap:hover {
+  .space-avatar {
+    transform: scale(1.15); /* 推荐1.1~1.25，不要写2！ */
+  }
+  .change-avatar {
+    opacity: 1;
+  }
+}
+// .space-avatar {
+//   flex-shrink: 0;
+//   border: 2px solid rgba(255, 255, 255, 0.9);
+//   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  
+// }
+// .space-avatar:hover {
+// transform:scale(2) 2s;
+
+// }
 .space-profile-meta {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-left: -16px;
   min-width: 0;
   padding-bottom: 4px;
 }
@@ -83,13 +143,18 @@
 }
 
 .space-nickname {
-  font-size: 20px;
+  font-size: 27px;
   font-weight: 700;
   color: #fff;
   line-height: 1.2;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
+.space-pic-lv{
+  position:relative;
+  left:1px;
+  bottom:2px;
+}
 .space-lv {
   display: inline-flex;
   align-items: center;
@@ -123,6 +188,7 @@
   color: rgba(255, 255, 255, 0.92);
   line-height: 1.4;
   max-width: 520px;
+  margin-left:-105px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

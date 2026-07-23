@@ -11,20 +11,29 @@
 
     <!-- 头图底部用户信息条（仿 B 站空间） -->
     <div class="space-profile">
+      
       <div class="space-profile-left">
-        <a-avatar
+        <div class="wrap">
+          <a-avatar
           class="space-avatar"
           :size="76"
           :src="profileAvatar"
         />
+        <div class="change-avatar">更换头像</div>
+        </div>
+        
         <div class="space-profile-meta">
           <div class="space-profile-row">
             <span class="space-nickname">{{ displayUser?.nickname || '未登录用户' }}</span>
-            <span class="space-lv">LV{{ displayLevel }}</span>
+            <span class="space-pic-lv">
+              <img class="lv_picture":src="lvSrc" alt="等级"/>
+            </span>
+            
             <span class="space-badge">大会员</span>
             <span class="space-badge space-badge-medal">+ 粉丝勋章</span>
           </div>
           <div class="space-sign">
+             <!-- <a-input v-model:value="value" placeholder="Basic usage" /> -->
             {{ displaySign }}
           </div>
         </div>
@@ -101,6 +110,11 @@ const currentUser = ref<UserBaseInfo | null>(null)
 
 onMounted(() => {
   currentUser.value = getUserInfo()
+})
+
+const lvSrc =computed(()=>{
+  const level=currentUser.value?.userLvInfo.level ?? 0
+  return new URL(`../../assets/lv_logo/lv${level}.png`, import.meta.url).href
 })
 
 /** 优先用本地登录用户；以后可按路由 uid 拉他人资料 */
