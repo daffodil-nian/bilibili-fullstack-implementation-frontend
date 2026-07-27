@@ -22,7 +22,7 @@
         <div class="change-avatar">更换头像</div>
         </div>
         
-        <div class="space-profile-meta">
+        <!-- <div class="space-profile-meta">
           <div class="space-profile-row">
             <span class="space-nickname">{{ displayUser?.nickname || '未登录用户' }}</span>
             <span class="space-pic-lv">
@@ -32,11 +32,41 @@
             <span class="space-badge">大会员</span>
             <span class="space-badge space-badge-medal">+ 粉丝勋章</span>
           </div>
-          <div class="space-sign">
-             <!-- <a-input v-model:value="value" placeholder="Basic usage" /> -->
+          
+           <a-input v-model:value="value" placeholder="修改签名" 
+           v-if="isEditing" class="edit-input" @blur="handleSave"/>
+           <div class="space-sign" v-else>
             {{ displaySign }}
           </div>
-        </div>
+        </div> -->
+        <div class="space-profile-meta">
+  <div class="space-profile-row">
+    <span class="space-nickname">{{ displayUser?.nickname || '未登录用户' }}</span>
+    <span class="space-pic-lv">
+      <img class="lv_picture" :src="lvSrc" alt="等级"/>
+    </span>
+    <span class="space-badge">大会员</span>
+    <span class="space-badge space-badge-medal">+ 粉丝勋章</span>
+  </div>
+  
+  <!-- 签名区域 -->
+  <!-- 编辑态：带白色背景的输入框，失焦或敲回车自动保存 -->
+  <a-input 
+    v-if="isEditing" 
+    ref="inputRef"
+    v-model:value="value" 
+    placeholder="设置签名，让大家认识你" 
+    class="edit-input"
+    :maxlength="60"
+    @blur="handleSave"
+    @keyup.enter="handleSave"
+  />
+
+  <!-- 展示态：未点击时普通文本显示，点击后切换为编辑态 -->
+  <div v-else class="space-sign" @click="handleEdit">
+    {{ displaySign }}
+  </div>
+</div>
       </div>
 
       <div class="space-profile-right">
@@ -91,26 +121,79 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref,watch,nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import BilibiliHeader from '../../components/layout/BilibiliHeader.vue'
 import HeaderBanner from '../../components/header/index.vue'
 import biliLogo from '../../assets/bilibili_blue_logo.png'
 import defaultAvatar from '../../assets/avatar/default.png'
-import { getUserInfo } from '../../services/userStorage'
+import { getUserInfo,updateUserField } from '../../services/userStorage'
 import type { UserBaseInfo } from '../../services/types'
-
+import {changeSignature} from "../../services/api.ts"
+import {message} from "ant-design-vue"
 /** 空间页头图高度，需要更高/更矮只改这一处 */
 const bannerHeight = 255
 
+const isEditing=ref(false);
+const value =ref<string>('');
 const route = useRoute()
 const uid = computed(() => route.params.uid)
-
+const inputRef = ref<any>(null) // 获取组件节点用于 focus
 const currentUser = ref<UserBaseInfo | null>(null)
-
+const userSignature = ref('')
+  watch(value,()=>{
+    console.log(value.value+"百无禁忌");
+  
+  }
+)
 onMounted(() => {
   currentUser.value = getUserInfo()
 })
+
+
+const handleEdit = () => {
+  value.value = userSignature.value // 把当前值赋给输入框
+  isEditing.value = true
+  
+  // 必须 nextTick，等 DOM 渲染出 input 后再聚焦
+  nextTick(() => {
+    inputRef.value?.focus()
+  })
+}
+
+// 失焦或敲回车触发保存，恢复为展示态
+const handleSave = async () => {
+  // 如果当前不在编辑状态，直接返回
+  if (!isEditing.value) return
+
+  // 先切回展示模式
+  isEditing.value = false
+
+  // 如果内容没变，不需要发起网络请求
+  if (value.value === userSignature.value) return
+
+  try {
+    // 1. 调用 api 函数：按照 UpdateSignatureReq 的结构传入对象 { signature: "..." }
+    // 注意：后端是 Map<String, String> body，其 key 为 "signature"
+    const res = await changeSignature({ signature: value.value })
+
+    // 2. 判断请求结果（如果你的 request 工具类已经自动抛错，这里能跑通就说明成功了）
+    userSignature.value = value.value // 保存成功，更新页面展示的签名
+    message.success('签名修改成功')
+    // const userInfo = getUserInfo()
+    // userInfo?.signature=value.value
+    updateUserField('signature',userSignature.value)
+
+  } catch (error) {
+    // 3. 修改失败：把输入框的值还原回修改前的签名
+    value.value = userSignature.value
+    console.error('修改签名失败：', error)
+  }
+}
+
+const changeUserSignature=(params:any)=>{
+  console.log('你好'+params)
+}
 
 const lvSrc =computed(()=>{
   const level=currentUser.value?.userLvInfo.level ?? 0
@@ -129,7 +212,7 @@ const displayLevel = computed(
 )
 
 const displaySign = computed(
-  () => (displayUser.value as any)?.signature || '这个人很懒，什么都没有写~',
+  () => (displayUser.value as any)?.signature || '这个人很调皮，什么也不留下！22娘都看不下去了！',
 )
 
 const followCount = computed(

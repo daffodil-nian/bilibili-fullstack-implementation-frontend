@@ -385,3 +385,21 @@
 .space-page {
   padding: 24px;
 }
+
+.edit-input {
+  width: 100%;
+  max-width: 600px;
+  height: 28px;
+  line-height: 28px;
+  background-color: #fff !important; /* 图2 的纯白背景 */
+  border: 1px solid #e3e5e7 !important;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 13px;
+
+  :deep(.ant-input) {
+    background-color: transparent !important;
+    color: #212121 !important; /* 白色背景下文字设为黑色 */
+    padding: 0;
+  }
+}

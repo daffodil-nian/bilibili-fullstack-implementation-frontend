@@ -22,3 +22,13 @@ export function getUserInfo(): UserBaseInfo | null {
 export function clearUserInfo() {
   localStorage.removeItem(USER_KEY)
 }
+
+export function updateUserField<K extends keyof UserBaseInfo>(
+  field:K,
+  value:UserBaseInfo[K]
+){
+  const user=getUserInfo()
+  if(!user) return 
+  user[field] =value
+  saveUserInfo(user)
+}

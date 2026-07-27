@@ -9,7 +9,7 @@ function isBizSuccess(code: unknown) {
   return code === 0 || code === 200
 }
 
-/** 从后端响应 / 异常里取出可读文案（对应 AssertUtil / BusinessException 的那句） */
+/** 从后端响应 / 异常里取出可读文案 */
 function pickMsg(data: any, fallback = '请求出错') {
   if (!data) return fallback
   if (typeof data === 'string') return data
@@ -17,23 +17,44 @@ function pickMsg(data: any, fallback = '请求出错') {
 }
 
 /**
- * @param url 接口路径
- * @param data 参数
- * @param method 请求方式 GET/POST/PUT/DELETE
- * @returns 后端 JSON 体，形如 { code, msg, data }
+ * 核心修改部分：提取 Header 并自动附带 bili_user_info 里的凭证
  */
+function getHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  const userInfoStr = localStorage.getItem('bili_user_info')
+  if (userInfoStr) {
+    try {
+      const userInfo = JSON.parse(userInfoStr)
+      // 1. 如果包含 token，带上 Token
+      const token = userInfo.token || userInfo.accessToken
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      // 2. 如果包含 uid，也塞进 Header（供后端直接读取或兜底）
+      if (userInfo.uid) {
+        headers['uid'] = String(userInfo.uid)
+      }
+      console.log(headers)
+    } catch (e) {
+      console.error('解析 bili_user_info 失败:', e)
+    }
+  }
+
+  return headers
+}
+
 function request<T extends Record<string, any>>(url: string, data: T, method: HttpMethod) {
   return axios({
     url,
     method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getHeaders(), // 👈 替换原来固定的 headers
     ...(method.toUpperCase() === 'GET' ? { params: data } : { data }),
   })
     .then((res) => {
       const body = res.data
-      // HTTP 200，但业务失败（部分接口不抛异常，只返回 code != 0）
       if (body && typeof body === 'object' && 'code' in body && !isBizSuccess(body.code)) {
         const errMsg = pickMsg(body, '操作失败')
         message.error(errMsg)
@@ -42,12 +63,9 @@ function request<T extends Record<string, any>>(url: string, data: T, method: Ht
       return body
     })
     .catch((err) => {
-      // 已经在 then 里处理并 reject 过的业务错误，不要重复弹窗
       if (err && typeof err === 'object' && 'code' in err && !err.response) {
         throw err
       }
-      // 后端 throw BusinessException → 全局异常处理返回 4xx/5xx
-      // 这里弹出异常里的那句 msg，例如「用户名或密码错误」
       message.error(pickMsg(err?.response?.data, err?.message || '请求出错'))
       throw err
     })
@@ -59,4 +77,7 @@ export const get = <T = Record<string, any>>(url: string, params?: T) =>
 export const post = <T = Record<string, any>>(url: string, data?: T) =>
   request(url, (data ?? {}) as Record<string, any>, 'POST')
 
-export default { get, post, request }
+export const put = <T = Record<string, any>>(url: string, data?: T) =>
+  request(url, (data ?? {}) as Record<string, any>, 'PUT')
+
+export default { get, post, put, request }

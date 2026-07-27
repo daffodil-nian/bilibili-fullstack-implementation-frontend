@@ -1,7 +1,7 @@
 // 这是一个负责给前端提供API的文件
-import { post } from './request'
+import { post,put } from './request'
 import urls from './urls'
-import type { UserBaseInfo } from './types'
+import type { UserBaseInfo,UpdateSignatureReq } from './types'
 
 // ==================== 通用类型 ====================
 
@@ -48,9 +48,15 @@ export function userLogout() {
   return post(urls.userLogout) as Promise<ApiResponse>
 }
 
+
+/** 用户修改个性签名 */
+export function changeSignature(params: UpdateSignatureReq){
+  return put(urls.changeUserSignature,params) as Promise<ApiResponse>
+}
 // ==================== 默认导出 ====================
 export default {
   userLogin,
   userRegister,
   userLogout,
+  changeSignature
 }

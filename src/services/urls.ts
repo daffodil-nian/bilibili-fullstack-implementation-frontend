@@ -6,4 +6,5 @@ export default {
   userLogin: `/api/auth/login`,
   userRegister: `/api/auth/register`,
   userLogout: `/api/auth/logout`,
+  changeUserSignature:`/api/user/update/signature`,
 }
