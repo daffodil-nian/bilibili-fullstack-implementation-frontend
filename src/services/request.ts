@@ -19,31 +19,33 @@ function pickMsg(data: any, fallback = '请求出错') {
 /**
  * 核心修改部分：提取 Header 并自动附带 bili_user_info 里的凭证
  */
-function getHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {}
 
   const userInfoStr = localStorage.getItem('bili_user_info')
   if (userInfoStr) {
     try {
       const userInfo = JSON.parse(userInfoStr)
-      // 1. 如果包含 token，带上 Token
       const token = userInfo.token || userInfo.accessToken
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
-      // 2. 如果包含 uid，也塞进 Header（供后端直接读取或兜底）
       if (userInfo.uid) {
         headers['uid'] = String(userInfo.uid)
       }
-      console.log(headers)
     } catch (e) {
       console.error('解析 bili_user_info 失败:', e)
     }
   }
 
   return headers
+}
+
+function getHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...getAuthHeaders(),
+  }
 }
 
 function request<T extends Record<string, any>>(url: string, data: T, method: HttpMethod) {
@@ -80,4 +82,30 @@ export const post = <T = Record<string, any>>(url: string, data?: T) =>
 export const put = <T = Record<string, any>>(url: string, data?: T) =>
   request(url, (data ?? {}) as Record<string, any>, 'PUT')
 
-export default { get, post, put, request }
+/** multipart/form-data 上传，不要手动设置 Content-Type */
+export function postForm(url: string, formData: FormData) {
+  return axios({
+    url,
+    method: 'POST',
+    headers: getAuthHeaders(),
+    data: formData,
+  })
+    .then((res) => {
+      const body = res.data
+      if (body && typeof body === 'object' && 'code' in body && !isBizSuccess(body.code)) {
+        const errMsg = pickMsg(body, '上传失败')
+        message.error(errMsg)
+        return Promise.reject(body)
+      }
+      return body
+    })
+    .catch((err) => {
+      if (err && typeof err === 'object' && 'code' in err && !err.response) {
+        throw err
+      }
+      message.error(pickMsg(err?.response?.data, err?.message || '上传失败'))
+      throw err
+    })
+}
+
+export default { get, post, put, postForm, request }

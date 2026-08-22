@@ -48,7 +48,7 @@
     <span class="space-badge">大会员</span>
     <span class="space-badge space-badge-medal">+ 粉丝勋章</span>
   </div>
-  
+
   <!-- 签名区域 -->
   <!-- 编辑态：带白色背景的输入框，失焦或敲回车自动保存 -->
   <a-input 
@@ -61,6 +61,9 @@
     @blur="handleSave"
     @keyup.enter="handleSave"
   />
+
+  <!-- 接下来完善修改用户名称的功能 -->
+
 
   <!-- 展示态：未点击时普通文本显示，点击后切换为编辑态 -->
   <div v-else class="space-sign" @click="handleEdit">
@@ -113,11 +116,89 @@
       </div>
     </div>
   </div>
-
-  <div class="space-page">
-    <h2>个人空间</h2>
-    <p>UID: {{ uid }}</p>
+  <div>
+    <!-- <a-avatar :src="" :size="100" /> -->
   </div>
+  <div class="space-page">
+    <div v-if="activeTab === 'home'">
+      <h2>主页</h2>
+      <p>这里是主页内容</p>
+    </div>
+    <div v-else-if="activeTab === 'dynamic'">
+      <h2>动态</h2>
+      <p>这里是动态内容</p> 
+    </div>
+    <div v-else-if="activeTab === 'video'">
+      <h2>视频</h2>
+      <p>这里是视频内容</p>
+    </div>
+    <div v-else-if="activeTab === 'collection'">
+      <h2>
+        合集和系列
+      </h2>
+    </div>
+    <div v-else-if="activeTab === 'fav'">
+      <h2>收藏</h2>
+      <p>这里是收藏内容</p>
+    </div>
+    <div v-else-if="activeTab === 'bangumi'">
+      <h2>追番追剧</h2>
+      <p>这里是追番追剧内容</p>
+    </div>
+    <div v-else-if="activeTab === 'setting'">
+      <h2>设置</h2>
+      <p>这里是设置内容</p>
+    </div>
+    <!-- <h2>个人空间</h2>
+    <p>UID: {{ uid }}</p> -->
+  </div>
+  <!-- 原来的a-card全部删掉，替换成下面 -->
+<div class="space-card-wrap" v-if="activeTab === 'home' || activeTab === 'dynamic'">
+  <!-- 申请bilibili认证 仿截图 -->
+  <div class="space-tip-block" >
+    <div class="tip-block-title" >点此申请bilibili认证 <span class="arrow">></span></div>
+    <div class="tip-block-desc">获得认证，享受多重认证福利！</div>
+  </div>
+
+  <div class="space-tip-block">
+    <div class="tip-block-title">创作中心 <span class="arrow">></span></div>
+    <div class="tip-block-desc">前往创作中心管理稿件</div>
+  </div>
+
+  <div class="space-tip-block">
+    <div class="tip-block-title">公告 <span class="arrow">></span></div>
+    <div class="tip-block-desc">平台最新公告通知</div>
+  </div>
+
+  <div class="space-tip-block">
+    <div class="tip-block-title" >个人资料 <span class="arrow" @click="goToProfile">></span></div>
+    <div class="tip-block-desc">修改你的个人信息</div>
+  </div>
+</div>
+  <!-- <a-card title="点此申请bilibili认证" style="width: 300px">
+    <template #extra><a href="#">more</a></template>
+    <p>card content</p>
+    <p>card content</p>
+    <p>card content</p>
+  </a-card>
+  <a-card title="创作中心" style="width: 300px">
+    <template #extra><a href="#">more</a></template>
+    <p>card content</p>
+    <p>card content</p>
+    <p>card content</p>
+  </a-card>
+  <a-card title="公告" style="width: 300px">
+    <template #extra><a href="#">more</a></template>
+    <p>card content</p>
+    <p>card content</p>
+    <p>card content</p>
+  </a-card>
+  <a-card title="个人资料" style="width: 300px">
+    <template #extra><a href="#">more</a></template>
+    <p>card content</p>
+    <p>card content</p>
+    <p>card content</p>
+  </a-card> -->
 </template>
 
 <script setup lang="ts">
@@ -131,6 +212,7 @@ import { getUserInfo,updateUserField } from '../../services/userStorage'
 import type { UserBaseInfo } from '../../services/types'
 import {changeSignature} from "../../services/api.ts"
 import {message} from "ant-design-vue"
+
 /** 空间页头图高度，需要更高/更矮只改这一处 */
 const bannerHeight = 255
 
@@ -150,6 +232,11 @@ onMounted(() => {
   currentUser.value = getUserInfo()
 })
 
+const goToProfile = () => {
+  // 跳转到个人资料页
+  // window.location.href = '/settingPage'
+  window.open('/settingPage', '_blank') // 在新标签页打开
+}
 
 const handleEdit = () => {
   value.value = userSignature.value // 把当前值赋给输入框
@@ -190,11 +277,13 @@ const handleSave = async () => {
     console.error('修改签名失败：', error)
   }
 }
+const handleChangeAvatar=()=>{
 
-const changeUserSignature=(params:any)=>{
-  console.log('你好'+params)
 }
 
+const handleSaveNickname=()=>{
+
+}
 const lvSrc =computed(()=>{
   const level=currentUser.value?.userLvInfo.level ?? 0
   return new URL(`../../assets/lv_logo/lv${level}.png`, import.meta.url).href

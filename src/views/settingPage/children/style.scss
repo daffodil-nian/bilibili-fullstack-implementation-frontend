@@ -1,0 +1,505 @@
+$bili-blue: #00a1d6;
+$bili-blue-hover: #00b5e5;
+$page-bg: #edf2f9;
+$border: #e5e9ef;
+$text: #222;
+$text-secondary: #6d757a;
+$text-hint: #99a2aa;
+
+.badge_pic{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.setting-page {
+  min-height: 100vh;
+  background: $page-bg;
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  color: $text;
+}
+
+/* ---- 顶栏 ---- */
+.setting-header {
+  position: relative;
+  height: 72px;
+  background: $bili-blue;
+  overflow: hidden;
+}
+
+.setting-header-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 980px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 4px;
+}
+
+.setting-logo {
+  height: 42px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  cursor: pointer;
+}
+
+.setting-header-clouds {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 160px 48px at 68% 108%, rgba(255, 255, 255, 0.45) 0%, transparent 72%),
+    radial-gradient(ellipse 120px 40px at 78% 110%, rgba(255, 255, 255, 0.38) 0%, transparent 70%),
+    radial-gradient(ellipse 100px 36px at 88% 112%, rgba(255, 255, 255, 0.32) 0%, transparent 70%),
+    radial-gradient(ellipse 70px 28px at 96% 115%, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+}
+
+.setting-header-mascots {
+  position: absolute;
+  right: max(24px, calc(50% - 490px + 24px));
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.mascot {
+  width: 36px;
+  height: 40px;
+  border-radius: 50% 50% 40% 40%;
+  background: rgba(255, 255, 255, 0.92);
+  position: relative;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.06);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #222;
+    top: 14px;
+  }
+
+  &::before {
+    left: 9px;
+  }
+
+  &::after {
+    right: 9px;
+  }
+}
+
+.mascot-22 {
+  background: linear-gradient(180deg, #fff 55%, #ffd9e8 100%);
+}
+
+.mascot-33 {
+  background: linear-gradient(180deg, #fff 55%, #d6f0ff 100%);
+}
+
+/* ---- 主体 ---- */
+.setting-body {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px 0 48px;
+}
+
+.setting-panel {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 640px;
+}
+
+/* ---- 侧栏 ---- */
+.setting-sider {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid $border;
+  background: #fff;
+}
+
+.sider-title {
+  height: 50px;
+  line-height: 50px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 700;
+  color: $text;
+  background: #f4f5f7;
+  border-bottom: 1px solid $border;
+}
+
+.sider-nav {
+  padding: 6px 0 12px;
+  list-style: none;
+  margin: 0;
+}
+
+.sider-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 18px;
+  font-size: 14px;
+  color: #505050;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+
+  .sider-icon {
+    flex-shrink: 0;
+    font-size: 15px;
+    color: #99a2aa;
+  }
+
+  .sider-text {
+    line-height: 1;
+  }
+
+  &:hover:not(.is-active) {
+    background: #f6f7f8;
+    color: $bili-blue;
+
+    .sider-icon {
+      color: $bili-blue;
+    }
+  }
+
+  &.is-active {
+    background: $bili-blue;
+    color: #fff;
+
+    .sider-icon {
+      color: #fff;
+    }
+  }
+}
+
+.sider-divider {
+  height: 1px;
+  margin: 8px 16px;
+  background: $border;
+  list-style: none;
+  padding: 0;
+  pointer-events: none;
+}
+
+.sider-item-link {
+  .sider-arrow {
+    margin-left: auto;
+    font-size: 16px;
+    line-height: 1;
+    color: #ccd0d7;
+  }
+
+  &:hover .sider-arrow {
+    color: $bili-blue;
+  }
+}
+
+/* ---- 内容区 ---- */
+.setting-content {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 36px 40px;
+  background: #fff;
+}
+
+.content-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 30px;
+  font-size: 18px;
+  font-weight: 700;
+  color: $text;
+  line-height: 1;
+
+  &::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    border-radius: 1px;
+    background: $bili-blue;
+  }
+}
+
+/* ---- 我的信息表单 ---- */
+.info-panel {
+  width: 100%;
+}
+
+.info-form {
+  max-width: 680px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.info-label {
+  width: 84px;
+  flex-shrink: 0;
+  line-height: 34px;
+  font-size: 14px;
+  color: $text;
+  text-align: right;
+  padding-right: 18px;
+  margin: 0;
+}
+
+.info-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.info-field-inline {
+  flex-wrap: nowrap;
+
+  @media (max-width: 720px) {
+    flex-wrap: wrap;
+  }
+}
+
+.info-input {
+  width: 260px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid $border;
+  border-radius: 2px;
+  font-size: 14px;
+  color: $text;
+  outline: none;
+  background: #fff;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: $bili-blue;
+  }
+}
+
+.info-textarea {
+  width: 100%;
+  max-width: 460px;
+  min-height: 96px;
+  padding: 8px 12px;
+  border: 1px solid $border;
+  border-radius: 2px;
+  font-size: 14px;
+  color: $text;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.6;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: $bili-blue;
+  }
+}
+
+.info-text {
+  line-height: 34px;
+  font-size: 14px;
+  color: $text;
+}
+
+.info-hint {
+  font-size: 12px;
+  color: $text-hint;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.info-hint-block {
+  line-height: 34px;
+  font-size: 12px;
+  color: $text-hint;
+}
+
+.gender-group {
+  display: flex;
+  gap: 12px;
+}
+
+.gender-btn {
+  min-width: 68px;
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid $border;
+  border-radius: 2px;
+  background: #fff;
+  color: $text-secondary;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: $bili-blue;
+    color: $bili-blue;
+  }
+
+  &.is-active {
+    background: $bili-blue;
+    border-color: $bili-blue;
+    color: #fff;
+  }
+}
+
+.info-date-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.info-date-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border: 1.5px solid #99a2aa;
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    top: 3px;
+    height: 1.5px;
+    background: #99a2aa;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 3px;
+    width: 6px;
+    height: 3px;
+    border-left: 1.5px solid #99a2aa;
+    border-right: 1.5px solid #99a2aa;
+    box-sizing: border-box;
+  }
+}
+
+.info-date {
+  width: 200px;
+  height: 34px;
+  padding: 0 10px 0 32px;
+  border: 1px solid $border;
+  border-radius: 2px;
+  font-size: 14px;
+  color: $text;
+  outline: none;
+  background: #fff;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: $bili-blue;
+  }
+}
+
+.info-footer {
+  margin-top: 12px;
+  padding-top: 28px;
+  border-top: 1px solid $border;
+  text-align: center;
+}
+
+.save-btn {
+  min-width: 120px;
+  height: 38px;
+  padding: 0 32px;
+  border: none;
+  border-radius: 4px;
+  background: $bili-blue;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: $bili-blue-hover;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.placeholder-panel {
+  .placeholder-text {
+    margin: 48px 0 0;
+    text-align: center;
+    color: $text-hint;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .setting-body {
+    padding: 16px 12px 40px;
+  }
+
+  .setting-panel {
+    flex-direction: column;
+  }
+
+  .setting-sider {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid $border;
+  }
+
+  .setting-content {
+    padding: 20px 16px 32px;
+  }
+
+  .info-row {
+    flex-direction: column;
+  }
+
+  .info-label {
+    text-align: left;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    padding-right: 0;
+  }
+
+  .info-input,
+  .info-textarea,
+  .info-date {
+    width: 100%;
+    max-width: none;
+  }
+
+  .info-hint {
+    white-space: normal;
+  }
+
+  .setting-header-mascots {
+    display: none;
+  }
+}

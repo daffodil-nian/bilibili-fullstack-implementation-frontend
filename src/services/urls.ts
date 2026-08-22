@@ -7,4 +7,9 @@ export default {
   userRegister: `/api/auth/register`,
   userLogout: `/api/auth/logout`,
   changeUserSignature:`/api/user/update/signature`,
+  // changeUserAvatar:`/api/user/update/avatar`,
+  uploadUserAvatar:`/api/user/update/avatar`,
+  changeUserNickname:`/api/user/update/nickname`,
+  changeUserBirthday:`/api/user/update/birthday`,
+  changeUserSex:`/api/user/update/sex`,
 }

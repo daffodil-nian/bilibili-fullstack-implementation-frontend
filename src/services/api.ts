@@ -1,7 +1,7 @@
 // 这是一个负责给前端提供API的文件
-import { post,put } from './request'
+import { post, put, postForm } from './request'
 import urls from './urls'
-import type { UserBaseInfo,UpdateSignatureReq } from './types'
+import type { UserBaseInfo,UpdateSignatureReq,UpdateAvatarReq } from './types'
 
 // ==================== 通用类型 ====================
 
@@ -53,10 +53,32 @@ export function userLogout() {
 export function changeSignature(params: UpdateSignatureReq){
   return put(urls.changeUserSignature,params) as Promise<ApiResponse>
 }
+export function changeSex(params: {sex:number}){
+  return put(urls.changeUserSex,params) as Promise<ApiResponse>
+}
+export function changeBirthday(params: {birthday:string}){
+  //传过来是string类型的日期，后端自动转成时间戳
+  return put(urls.changeUserBirthday,params) as Promise<ApiResponse>
+}
+// export function changeAvatar(params: UpdateAvatarReq){
+//   return put(urls.changeUserAvatar,params) as Promise<ApiResponse>
+// }
+
+/** 上传头像文件，对应后端 @RequestParam("file") MultipartFile file */
+export function uploadAvatarFile(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return postForm(urls.uploadUserAvatar, formData) as Promise<ApiResponse<string>>
+}
+export function changeNickname(params: {nickname:string}){
+  return put(urls.changeUserNickname,params) as Promise<ApiResponse>  
+}
 // ==================== 默认导出 ====================
 export default {
   userLogin,
   userRegister,
   userLogout,
-  changeSignature
+  changeSignature,
+  changeBirthday,
+  // changeAvatar
 }

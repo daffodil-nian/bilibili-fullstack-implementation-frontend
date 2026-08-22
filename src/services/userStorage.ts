@@ -5,6 +5,7 @@ const USER_KEY = 'bili_user_info'
 /** 登录成功后写入 localStorage */
 export function saveUserInfo(user: UserBaseInfo) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
+  //然后还要更新数据库存储的数据
 }
 
 /** 读取本地登录用户；没有则返回 null */
