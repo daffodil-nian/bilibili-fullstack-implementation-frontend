@@ -166,14 +166,16 @@ const handleUpdate = async () => {
     const uploadRes = await uploadAvatarFile(selectedFile.value)
     const avatarUrl = pickAvatarUrl(uploadRes.data)
 
+    console.log('上传头像返回的地址:', avatarUrl)
+    console.log('上传头像返回的完整数据:', uploadRes.data)
     if (!avatarUrl) {
       message.error('上传成功，但未返回头像地址')
       return
     }
 
-    await changeAvatar({ avatar: avatarUrl })
+    await uploadAvatarFile( selectedFile.value)
     currentAvatar.value = avatarUrl
-    updateUserField('avatar', avatarUrl)
+    updateUserField('avatar', avatarUrl)// 更新本地存储的用户信息
     selectedFile.value = null
     revokePreviewUrl()
     message.success('头像更新成功')
