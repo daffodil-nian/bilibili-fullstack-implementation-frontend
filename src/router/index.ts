@@ -3,6 +3,7 @@ import HomeView from "../../src/views/home/index.vue";
 import SearchPage from "../views/search/searchPage.vue";
 import SpacePage from "../views/space/index.vue";
 import settingPage from "../views/settingPage/index.vue";
+import searchResult from "../views/search/searchResult/searchResult.vue";
 const routes =[
     {
         path: '/',
@@ -11,6 +12,10 @@ const routes =[
     {
         path:'/search',
         component: SearchPage
+    },
+    {
+        path:'/searchResult',
+        component: searchResult
     },
     {
         path: '/space/:uid',

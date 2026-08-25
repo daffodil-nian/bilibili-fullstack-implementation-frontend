@@ -19,7 +19,7 @@
           :size="76"
           :src="profileAvatar"
         />
-        <div class="change-avatar">更换头像</div>
+        <div class="change-avatar" @click="changeAvatar">更换头像</div>
         </div>
         
         <!-- <div class="space-profile-meta">
@@ -212,6 +212,8 @@ import { getUserInfo,updateUserField } from '../../services/userStorage'
 import type { UserBaseInfo } from '../../services/types'
 import {changeSignature} from "../../services/api.ts"
 import {message} from "ant-design-vue"
+import {useRouter} from "vue-router"
+const router=useRouter()
 
 /** 空间页头图高度，需要更高/更矮只改这一处 */
 const bannerHeight = 255
@@ -223,6 +225,7 @@ const uid = computed(() => route.params.uid)
 const inputRef = ref<any>(null) // 获取组件节点用于 focus
 const currentUser = ref<UserBaseInfo | null>(null)
 const userSignature = ref('')
+// const changeAvatar=ref(false);
   watch(value,()=>{
     console.log(value.value+"百无禁忌");
   
@@ -231,6 +234,17 @@ const userSignature = ref('')
 onMounted(() => {
   currentUser.value = getUserInfo()
 })
+const changeAvatar=()=>{
+  //实现逻辑
+  // router.push({
+  //   path: '/settingPage',
+  //   query:{
+  //     activeKey:'avatar'
+  //   }
+  // })
+  const url=  `/settingPage?activeKey=avatar`
+  window.open(url, '_blank') // 在新标签页打开
+}
 
 const goToProfile = () => {
   // 跳转到个人资料页

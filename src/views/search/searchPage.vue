@@ -4,6 +4,11 @@ import BilibiliHeader from "../../components/layout/BilibiliHeader.vue";
 import {SearchOutlined} from "@ant-design/icons-vue";
 import {ref,computed} from "vue";
 import { vClickOutside } from "../../directives/clickOutside.ts";
+import {useRoute} from "vue-router";
+// import {defaultPage} from "./children/defaultPage.vue"
+const route = useRoute()
+
+const activeKey = route.query.activeKey as string || 'info';
 const inputText=ref<string>();
 const isFocusInput=ref<boolean>(false);
 const handleFocus=()=>{

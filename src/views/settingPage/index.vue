@@ -88,7 +88,10 @@ import {
 import biliLogo from '../../assets/bilibili_blue_logo.png'
 import { getUserInfo } from '../../services/userStorage.ts'
 import InfoPanel from './children/info.vue'
+import {onMounted} from 'vue'
 import MyAvatar from './children/MyAvatar.vue'
+import {useRoute} from "vue-router";
+const route = useRoute()
 type MenuItem = {
   key: string
   label: string
@@ -101,8 +104,12 @@ type LinkItem = MenuItem & {
 }
 
 const router = useRouter()
-const activeKey = ref('info')
-
+// const initKey = 
+const queryKey=route.query.activeKey as string
+const activeKey = queryKey ? ref(queryKey) : ref('info');
+onMounted(()=>{
+console.log(queryKey+"")
+})
 const menuItems: MenuItem[] = [
   { key: 'home', label: '首页', icon: HomeOutlined },
   { key: 'member', label: '大会员', icon: CrownOutlined },

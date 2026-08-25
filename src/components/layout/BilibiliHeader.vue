@@ -20,7 +20,7 @@
     <div class="search-wrapper">
       <a-input v-model:value="userName" placeholder="搜索" class="nav-search-input">
         <template #suffix>
-          <SearchOutlined class="nav-search-icon" />
+          <SearchOutlined class="nav-search-icon" @click="goToSearch"/>
         </template>
       </a-input>
     </div>
@@ -255,6 +255,7 @@ const props = withDefaults(defineProps<{
 
 const router = useRouter()
 
+
 // 基础变量
 const userName = ref<string>('');
 const currentUser = ref<UserBaseInfo | null>(null)
@@ -275,6 +276,17 @@ const navThemeClass = computed(() => {
 const onScroll = () => {
   if (!props.withBanner) return
   isOverBanner.value = window.scrollY < BANNER_HEIGHT
+}
+
+const goToSearch =()=>{
+  if(!userName.value) {
+    message.warning('请输入搜索关键词')
+    return
+  }
+  const path='/searchResult'
+
+  window.open(path,"_blank")
+  // router.push({ path: '/search', query: { keyword: userName.value } })
 }
 
 onMounted(() => {
@@ -364,6 +376,7 @@ const registerForm = reactive({
 // 处理底部主按钮（确定/登录/注册）
 // 空账号/空密码等校验交给后端 AssertUtil，前端只负责弹出后端返回的 msg
 const handleOk = async () => {
+  console.log('当前弹窗状态:', isRegisterMode.value ? '注册' : '登录')
   if (isRegisterMode.value) {
     // 仅前端能判断的「两次密码是否一致」留在本地；其余文案以后端为准
     if (
@@ -381,6 +394,7 @@ const handleOk = async () => {
         password: registerForm.password,
         checkPassword: registerForm.confirmPassword,
       })
+      console.log('注册返回数据:', body)
       message.success(body.msg || '注册成功')
 
       // 后端若直接返回用户信息 → 当作已登录
