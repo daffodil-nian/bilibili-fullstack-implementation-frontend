@@ -12,4 +12,6 @@ export default {
   changeUserNickname:`/api/user/update/nickname`,
   changeUserBirthday:`/api/user/update/birthday`,
   changeUserSex:`/api/user/update/sex`,
+  /** 搜索（用户 Tab 等） */
+  searchAll: `/api/search/all`,
 }

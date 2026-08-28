@@ -283,7 +283,7 @@ const goToSearch =()=>{
     message.warning('请输入搜索关键词')
     return
   }
-  const path='/searchResult'
+  const path=`/searchResult?keyword=${encodeURIComponent(userName.value)}`
 
   window.open(path,"_blank")
   // router.push({ path: '/search', query: { keyword: userName.value } })

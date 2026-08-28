@@ -39,12 +39,15 @@
       <div class="more-filter">更多筛选 ∨</div>
     </div>
 
-    <!-- 搜索结果列表区域 -->
+    <!-- 搜索结果列表区域（沿用原有 class，不改样式） -->
     <div class="result-list">
       <div v-if="loading" class="loading">搜索加载中...</div>
       <div v-if="!loading && resultData.length === 0" class="empty">暂无搜索结果</div>
       <div v-for="item in resultData" :key="item.id" class="video-card">
-        <div class="card-cover">封面图</div>
+        <div class="card-cover">
+          <img v-if="item.cover" :src="item.cover" alt="" style="width:100%;height:100%;object-fit:cover;" />
+          <template v-else>封面图</template>
+        </div>
         <div class="card-info">
           <div class="card-title">{{ item.title }}</div>
         </div>
@@ -54,15 +57,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import bilibiliHeader from "../../../components/layout/BilibiliHeader.vue"
+import { searchAll } from '../../../services/api'
+
+/** 前端「用户」Tab code */
+const USER_TAB_CODE = 6
+/** 后端 SearchTypeEnum.USER */
+const BACKEND_SEARCH_TYPE_USER = 2
+
+const route = useRoute()
 
 // 搜索关键词
 const keyword = ref('仿写bilibili')
 const loading = ref(false)
 interface SearchResultItem{
-    id:number,
-    title:string
+    id:number | string,
+    title:string,
+    cover?: string
 }
 const resultData = ref<SearchResultItem[]>([])
 
@@ -100,28 +113,44 @@ const switchSort = (code:number) => {
   handleSearch()
 }
 
-// 发起搜索请求
-const handleSearch = () => {
+/** 仅用户 Tab 调后端；其它 Tab 保持原空结果逻辑 */
+const handleSearch = async () => {
   loading.value = true
-  // todo:调用后端接口
-  // axios.get('/api/search',{
-  //   params:{
-  //     keyword: keyword.value,
-  //     tabCode: activeTopTab.value,
-  //     sortCode: activeSortCode.value
-  //   }
-  // }).then(res=>{
-  //   resultData.value = res.data.records
-  // }).finally(()=>{
-  //   loading.value = false
-  // })
-
-  // 模拟
-  setTimeout(() => {
+  try {
+    if (activeTopTab.value === USER_TAB_CODE) {
+      const res = await searchAll({
+        keyword: keyword.value,
+        searchType: BACKEND_SEARCH_TYPE_USER,
+        sortCode: activeSortCode.value,
+        currentNum: 1,
+        pageSize: 20,
+      })
+      const users = res?.data?.userList ?? []
+      resultData.value = users.map((u, idx) => ({
+        id: u.UID ?? u.uid ?? idx,
+        title: u.nickname || '未知用户',
+        cover: u.avatar || '',
+      }))
+      const userTab = topTabList.find((t) => t.code === USER_TAB_CODE)
+      if (userTab) {
+        userTab.count = users.length
+      }
+    } else {
+      resultData.value = []
+    }
+  } catch (e) {
     resultData.value = []
+  } finally {
     loading.value = false
-  }, 600)
+  }
 }
+
+onMounted(() => {
+  const q = route.query.keyword
+  if (typeof q === 'string' && q.trim()) {
+    keyword.value = q.trim()
+  }
+})
 </script>
 
 <style scoped src="./style.scss">

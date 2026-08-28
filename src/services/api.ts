@@ -3,6 +3,33 @@ import { post, put, postForm } from './request'
 import urls from './urls'
 import type { UserBaseInfo,UpdateSignatureReq,UpdateAvatarReq } from './types'
 
+/** 搜索请求参数（对齐后端 SearchEsReq） */
+export interface SearchAllParams {
+  keyword: string
+  searchType: number
+  sortCode?: number
+  currentNum?: number
+  pageSize?: number
+}
+
+/** 搜索返回中的用户项（字段按后端 UserVO 兼容） */
+export interface SearchUserItem {
+  uid?: number
+  UID?: number
+  nickname?: string
+  avatar?: string
+  signature?: string
+  videoCount?: number
+  userFollowInfo?: { fansCount?: number }
+  userLvInfo?: { level?: number; levelName?: string }
+}
+
+export interface SearchAllResult {
+  userList?: SearchUserItem[]
+  currentNum?: number
+  pageSize?: number
+}
+
 // ==================== 通用类型 ====================
 
 /** API 通用响应结构 */
@@ -73,6 +100,12 @@ export function uploadAvatarFile(file: File) {
 export function changeNickname(params: {nickname:string}){
   return put(urls.changeUserNickname,params) as Promise<ApiResponse>  
 }
+
+/** 搜索接口：用户 Tab 时 searchType=2 */
+export function searchAll(params: SearchAllParams) {
+  return post(urls.searchAll, params) as Promise<ApiResponse<SearchAllResult>>
+}
+
 // ==================== 默认导出 ====================
 export default {
   userLogin,
@@ -80,5 +113,6 @@ export default {
   userLogout,
   changeSignature,
   changeBirthday,
+  searchAll,
   // changeAvatar
 }
