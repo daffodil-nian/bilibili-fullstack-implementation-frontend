@@ -95,25 +95,35 @@ const switchSort = (code) => {
 
 // 发起搜索请求
 const handleSearch = () => {
+  console.log("12121")
+   console.log('搜索关键词:', keyword.value)
   loading.value = true
-  // todo:调用后端接口
-  // axios.get('/api/search',{
-  //   params:{
-  //     keyword: keyword.value,
-  //     tabCode: activeTopTab.value,
-  //     sortCode: activeSortCode.value
-  //   }
-  // }).then(res=>{
-  //   resultData.value = res.data.records
-  // }).finally(()=>{
-  //   loading.value = false
-  // })
-
-  // 模拟
-  setTimeout(() => {
-    resultData.value = []
+  todo:调用后端接口
+  axios.get('/api/search',{
+    params:{
+      keyword: keyword.value,
+      tabCode: activeTopTab.value,
+      sortCode: activeSortCode.value
+    }
+  }).then(res=>{
+    if(activeTopTab.value === 6){
+ 
+resultData.value = res.data.userList || []
+    }
+    else {
+      resultData.value =  []
+    }
+    
+  }).finally(()=>{
     loading.value = false
-  }, 600)
+  })
+  console.log('搜索关键词:', keyword.value)
+  console.log(resultData.value)
+  // // 模拟
+  // setTimeout(() => {
+  //   resultData.value = []
+  //   loading.value = false
+  // }, 600)
 }
 </script>
 

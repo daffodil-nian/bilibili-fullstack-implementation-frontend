@@ -3,6 +3,19 @@ import { post, put, postForm } from './request'
 import urls from './urls'
 import type { UserBaseInfo,UpdateSignatureReq,UpdateAvatarReq } from './types'
 
+/**
+ * 后端 SearchTypeEnum
+ * VIDEO(1) USER(2) POST(3) ANIME(4) LIVE(5) ARTICLE(6)
+ */
+export const SearchType = {
+  VIDEO: 1,
+  USER: 2,
+  POST: 3,
+  ANIME: 4,
+  LIVE: 5,
+  ARTICLE: 6,
+} as const
+
 /** 搜索请求参数（对齐后端 SearchEsReq） */
 export interface SearchAllParams {
   keyword: string
@@ -12,20 +25,61 @@ export interface SearchAllParams {
   pageSize?: number
 }
 
-/** 搜索返回中的用户项（字段按后端 UserVO 兼容） */
+/** 搜索返回中的用户项（对齐后端 UserVO / 控制台实际字段） */
 export interface SearchUserItem {
   uid?: number
   UID?: number
   nickname?: string
-  avatar?: string
-  signature?: string
-  videoCount?: number
-  userFollowInfo?: { fansCount?: number }
-  userLvInfo?: { level?: number; levelName?: string }
+  avatar?: string | null
+  signature?: string | null
+  sex?: number | null
+  birthDay?: string | null
+  activeStatus?: number | null
+  ipInfo?: Record<string, unknown> | null
+  videoCount?: number | null
+  userFollowInfo?: {
+    fansCount?: number | null
+    followCount?: number | null
+  } | null
+  userLvInfo?: {
+    level?: number | null
+    levelName?: string | null
+    needAddExp?: number | null
+    totalExp?: number | null
+  } | null
+}
+
+/** 搜索返回中的专栏/文章项（对齐后端 ArticleSearchVO） */
+export interface SearchArticleItem {
+  articleId?: number
+  category?: number
+  title?: string
+  cover?: string
+  summary?: string
+  tag?: string
+  userId?: number
+  authorNickname?: string
+  likeCount?: number
+  commentCount?: number
+  clickCount?: number
+  publishTime?: string
+}
+
+/** 预留：视频等后续后端补齐字段 */
+export interface SearchVideoItem {
+  videoId?: number
+  title?: string
+  cover?: string
+  playCount?: number
+  danmakuCount?: number
+  authorNickname?: string
+  publishTime?: string
 }
 
 export interface SearchAllResult {
   userList?: SearchUserItem[]
+  articleList?: SearchArticleItem[]
+  videoList?: SearchVideoItem[]
   currentNum?: number
   pageSize?: number
 }
@@ -101,7 +155,10 @@ export function changeNickname(params: {nickname:string}){
   return put(urls.changeUserNickname,params) as Promise<ApiResponse>  
 }
 
-/** 搜索接口：用户 Tab 时 searchType=2 */
+/**
+ * 统一搜索接口 POST /api/search/all
+ * 通过 searchType 区分：视频/用户/帖子/番剧/直播/专栏
+ */
 export function searchAll(params: SearchAllParams) {
   return post(urls.searchAll, params) as Promise<ApiResponse<SearchAllResult>>
 }

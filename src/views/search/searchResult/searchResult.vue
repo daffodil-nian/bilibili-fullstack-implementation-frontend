@@ -1,17 +1,19 @@
 <template>
-
-<bilibiliHeader/>
+  <bilibiliHeader />
   <div class="search-page">
-    <!-- 搜索框区域 -->
     <div class="search-header">
       <div class="search-input-wrap">
         <span class="search-icon">Q</span>
-        <input v-model="keyword" type="text" placeholder="请输入搜索内容" />
+        <input
+          v-model="keyword"
+          type="text"
+          placeholder="请输入搜索内容"
+        
+        />
         <button class="search-btn" @click="handleSearch">搜索</button>
       </div>
     </div>
 
-    <!-- 一级Tab：综合、视频、番剧、影视、直播、专栏、用户 -->
     <div class="tab-wrap">
       <div
         v-for="item in topTabList"
@@ -21,14 +23,13 @@
         @click="switchTopTab(item.code)"
       >
         {{ item.label }}
-        <span class="count-badge">{{ item.count }}</span>
+        <span class="count-badge">{{ formatCount(item.count) }}</span>
       </div>
     </div>
 
-    <!-- 二级排序Tab -->
     <div class="sort-tab-wrap">
       <div
-        v-for="item in sortTabList"
+        v-for="item in currentStrategy.sortTabs"
         :key="item.code"
         class="sort-item"
         :class="{ active: activeSortCode === item.code }"
@@ -39,107 +40,101 @@
       <div class="more-filter">更多筛选 ∨</div>
     </div>
 
-    <!-- 搜索结果列表区域（沿用原有 class，不改样式） -->
     <div class="result-list">
       <div v-if="loading" class="loading">搜索加载中...</div>
-      <div v-if="!loading && resultData.length === 0" class="empty">暂无搜索结果</div>
-      <div v-for="item in resultData" :key="item.id" class="video-card">
-        <div class="card-cover">
-          <img v-if="item.cover" :src="item.cover" alt="" style="width:100%;height:100%;object-fit:cover;" />
-          <template v-else>封面图</template>
-        </div>
-        <div class="card-info">
-          <div class="card-title">{{ item.title }}</div>
-        </div>
-      </div>
+      <div v-else-if="resultList.length === 0" class="empty">{{ emptyText }}</div>
+      <component
+        :is="currentStrategy.resultComponent"
+        v-else
+        :list="resultList"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import bilibiliHeader from "../../../components/layout/BilibiliHeader.vue"
-import { searchAll } from '../../../services/api'
-
-/** 前端「用户」Tab code */
-const USER_TAB_CODE = 6
-/** 后端 SearchTypeEnum.USER */
-const BACKEND_SEARCH_TYPE_USER = 2
+import bilibiliHeader from '../../../components/layout/BilibiliHeader.vue'
+import {
+  getStrategy,
+  SearchTab,
+  topTabMeta,
+  type SearchStrategy,
+} from './strategies'
 
 const route = useRoute()
 
-// 搜索关键词
-const keyword = ref('仿写bilibili')
+const keyword = ref('')
 const loading = ref(false)
-interface SearchResultItem{
-    id:number | string,
-    title:string,
-    cover?: string
-}
-const resultData = ref<SearchResultItem[]>([])
-
-// 顶部一级tab
-const topTabList = reactive([
-  { code: 0, label: '综合', count: '99+' },
-  { code: 1, label: '视频', count: '99+' },
-  { code: 2, label: '番剧', count: 0 },
-  { code: 3, label: '影视', count: 0 },
-  { code: 4, label: '直播', count: 0 },
-  { code: 5, label: '专栏', count: '99+' },
-  { code: 6, label: '用户', count: 0 }
-])
-const activeTopTab = ref(0)
-
-// 排序tab，和后端枚举对应
-const sortTabList = reactive([
-  { code: 0, label: '综合排序' },
-  { code: 1, label: '最多播放' },
-  { code: 2, label: '最新发布' },
-  { code: 3, label: '最多弹幕' },
-  { code: 4, label: '最多收藏' }
-])
+const activeTopTab = ref<number>(SearchTab.ALL)
 const activeSortCode = ref(0)
+const resultList = ref<unknown[]>([])
 
-// 切换一级tab
-const switchTopTab = (code:number) => {
+const topTabList = reactive(
+  topTabMeta.map((t) => ({
+    code: t.code,
+    label: t.label,
+    count: 0 as number | string,
+  })),
+)
+
+const currentStrategy = computed<SearchStrategy>(() => getStrategy(activeTopTab.value))
+
+const emptyText = computed(() => {
+  if (currentStrategy.value.searchType == null) {
+    return currentStrategy.value.unsupportedText || '该分类暂未开放搜索'
+  }
+  if (!keyword.value.trim()) return '请输入搜索关键词'
+  return '暂无搜索结果'
+})
+
+const formatCount = (count: number | string) => {
+  if (typeof count === 'string') return count
+  if (count > 99) return '99+'
+  return count
+}
+
+const updateTabCount = (tabCode: number, count: number) => {
+  const tab = topTabList.find((t) => t.code === tabCode)
+  if (tab) tab.count = count
+}
+
+const switchTopTab = (code: number) => {
+  if (activeTopTab.value === code) return
   activeTopTab.value = code
+  activeSortCode.value = 0
+  resultList.value = []
   handleSearch()
 }
 
-// 切换排序
-const switchSort = (code:number) => {
+const switchSort = (code: number) => {
+  if (activeSortCode.value === code) return
   activeSortCode.value = code
   handleSearch()
 }
 
-/** 仅用户 Tab 调后端；其它 Tab 保持原空结果逻辑 */
+/** 页面只调度策略，不关心 userList / articleList 差异 */
 const handleSearch = async () => {
+  const kw = keyword.value.trim()
+  const strategy = currentStrategy.value
+  resultList.value = []
+  
+  if (!kw || strategy.searchType == null) return
+
   loading.value = true
   try {
-    if (activeTopTab.value === USER_TAB_CODE) {
-      const res = await searchAll({
-        keyword: keyword.value,
-        searchType: BACKEND_SEARCH_TYPE_USER,
-        sortCode: activeSortCode.value,
-        currentNum: 1,
-        pageSize: 20,
-      })
-      const users = res?.data?.userList ?? []
-      resultData.value = users.map((u, idx) => ({
-        id: u.UID ?? u.uid ?? idx,
-        title: u.nickname || '未知用户',
-        cover: u.avatar || '',
-      }))
-      const userTab = topTabList.find((t) => t.code === USER_TAB_CODE)
-      if (userTab) {
-        userTab.count = users.length
-      }
-    } else {
-      resultData.value = []
-    }
+    const list = await strategy.fetch({
+      keyword: kw,
+      sortCode: activeSortCode.value,
+      currentNum: 1,
+      pageSize: 20,
+    })
+    resultList.value = list
+    updateTabCount(activeTopTab.value, list.length)
   } catch (e) {
-    resultData.value = []
+    console.error('搜索失败', e)
+    resultList.value = []
   } finally {
     loading.value = false
   }
@@ -150,9 +145,17 @@ onMounted(() => {
   if (typeof q === 'string' && q.trim()) {
     keyword.value = q.trim()
   }
+  const tab = route.query.tab
+  if (typeof tab === 'string' && tab !== '') {
+    const tabNum = Number(tab)
+    if (!Number.isNaN(tabNum) && getStrategy(tabNum)) {
+      activeTopTab.value = tabNum
+    }
+  }
+  if (keyword.value.trim()) {
+    handleSearch()
+  }
 })
 </script>
 
-<style scoped src="./style.scss">
-
-</style>
+<style scoped src="./style.scss"></style>
