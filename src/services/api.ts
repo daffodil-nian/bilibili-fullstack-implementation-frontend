@@ -1,7 +1,7 @@
 // 这是一个负责给前端提供API的文件
-import { post, put, postForm } from './request'
+import { get, post, put, postForm } from './request'
 import urls from './urls'
-import type { UserBaseInfo,UpdateSignatureReq,UpdateAvatarReq } from './types'
+import type { UserBaseInfo, UpdateSignatureReq } from './types'
 
 /**
  * 后端 SearchTypeEnum
@@ -155,6 +155,82 @@ export function changeNickname(params: {nickname:string}){
   return put(urls.changeUserNickname,params) as Promise<ApiResponse>  
 }
 
+/** 关注 / 取消关注（后端 toggle），body 只需被关注者 u_id */
+export function followUser(params: { followId: number }) {
+  return post(urls.userFollow, params) as Promise<ApiResponse<boolean>>
+}
+
+/** 个人空间 VO（对齐后端 UserSpaceVO） */
+export interface UserSpaceVO {
+  uid: number
+  nickname?: string
+  avatar?: string
+  birthday?: string | null
+  level?: number
+  signature?: string
+  followCount?: number
+  fansCount?: number
+  likeCount?: number
+  playCount?: number
+  showFollowList?: boolean
+  showFansList?: boolean
+  followed?: boolean
+}
+
+/** 关注/粉丝列表行（对齐后端 UserSimpleVO） */
+export interface UserSimpleVO {
+  uid: number
+  nickname?: string
+  avatar?: string
+  signature?: string
+  level?: number
+  followed?: boolean
+}
+
+/** 隐私开关（对齐后端 UserPrivacyReq，Boolean） */
+export interface UserPrivacyVO {
+  showCollect?: boolean
+  showBirthdayAndTag?: boolean
+  showComic?: boolean
+  showBangumi?: boolean
+  showSchoolInfo?: boolean
+  showFansDecorate?: boolean
+  showCoinVideo?: boolean
+  showGame?: boolean
+  showLiveReplay?: boolean
+  showLikeVideo?: boolean
+  showFansMedal?: boolean
+  showClassVideo?: boolean
+  showFollowList?: boolean
+  showFansList?: boolean
+  showChargeVideo?: boolean
+}
+
+/** 个人空间主页 */
+export function getUserSpace(targetUid: number) {
+  return get(urls.userSpace(targetUid)) as Promise<ApiResponse<UserSpaceVO>>
+}
+
+/** 查自己隐私设置 */
+export function getMyPrivacy() {
+  return get(urls.userPrivacyGet) as Promise<ApiResponse<UserPrivacyVO>>
+}
+
+/** 更新隐私设置 */
+export function updatePrivacy(body: UserPrivacyVO) {
+  return put(urls.userPrivacyUpdate, body) as Promise<ApiResponse<boolean>>
+}
+
+/** 关注列表 */
+export function listFollows(targetUid: number, page = 1, size = 24) {
+  return get(urls.userFollows(targetUid), { page, size }) as Promise<ApiResponse<UserSimpleVO[]>>
+}
+
+/** 粉丝列表 */
+export function listFans(targetUid: number, page = 1, size = 24) {
+  return get(urls.userFans(targetUid), { page, size }) as Promise<ApiResponse<UserSimpleVO[]>>
+}
+
 /**
  * 统一搜索接口 POST /api/search/all
  * 通过 searchType 区分：视频/用户/帖子/番剧/直播/专栏
@@ -171,5 +247,11 @@ export default {
   changeSignature,
   changeBirthday,
   searchAll,
+  followUser,
+  getUserSpace,
+  getMyPrivacy,
+  updatePrivacy,
+  listFollows,
+  listFans,
   // changeAvatar
 }

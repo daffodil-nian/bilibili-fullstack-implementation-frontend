@@ -26,12 +26,19 @@
         </div>
 
         <div class="card-meta">
-          <span> {{ item.userFollowInfo?.fansCount ?? 0 }}<span v-if="item.userFollowInfo?.fansCount >= 10000">万</span>粉丝</span>
+          <span> {{ item.userFollowInfo?.fansCount ?? 0 }}<span v-if="(item.userFollowInfo?.fansCount ?? 0) >= 10000">万</span>粉丝</span>
           <span>投稿 {{ item.videoCount ?? 0 }}</span>
           <span> {{ item.signature || '这个人很懒，什么都没写' }}</span>
         </div>
-        <button type="button" class="user-follow-btn" @click.stop>
-          + 关注
+        <!-- stop：点关注时不要冒泡到卡片的 goSpace -->
+        <button
+          type="button"
+          class="user-follow-btn"
+          :class="{ followed: isFollowed(item) }"
+          :disabled="followingUid === getUid(item)"
+          @click.stop="onFollow(item)"
+        >
+          {{ isFollowed(item) ? '已关注' : '+ 关注' }}
         </button>
       </div>
     </div>
@@ -39,8 +46,11 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { message } from 'ant-design-vue'
 import defaultAvatar from '../../../../assets/avatar/default.png'
-import type { SearchUserItem } from '../../../../services/api'
+import { followUser, type SearchUserItem } from '../../../../services/api'
+import { getUserInfo } from '../../../../services/userStorage'
 
 defineProps<{
   list: SearchUserItem[]
@@ -48,7 +58,65 @@ defineProps<{
 
 const cosHost = (import.meta.env.VITE_COS_HOST as string | undefined)?.replace(/\/$/, '') || ''
 
+/** 本页点过关注/取关后的本地状态（toggle 后切换文案） */
+const followedMap = ref<Record<number, boolean>>({})
+/** 正在请求中的目标 uid，防止连点 */
+const followingUid = ref<number | null>(null)
+
 const getUid = (item: SearchUserItem) => item.uid ?? item.UID
+
+const isFollowed = (item: SearchUserItem) => {
+  const uid = getUid(item)
+  if (uid == null) return false
+  return !!followedMap.value[uid]
+}
+
+/**
+ * 点关注：
+ * 1. 未登录 → 提示
+ * 2. 不能关注自己
+ * 3. POST /api/user/follow { followId }
+ */
+const onFollow = async (item: SearchUserItem) => {
+  const targetUid = getUid(item)
+  if (targetUid == null) {
+    message.warning('用户信息异常')
+    return
+  }
+
+  const me = getUserInfo()
+  if (!me?.uid) {
+    message.warning('请先登录后再关注哦~')
+    return
+  }
+  if (me.uid === targetUid) {
+    message.warning('不能关注自己哦~')
+    return
+  }
+  if (followingUid.value === targetUid) return
+
+  followingUid.value = targetUid
+  try {
+    const res = await followUser({ followId: targetUid })
+    if (res?.data) {
+      // 后端是 toggle：本地翻转按钮文案
+      const next = !isFollowed(item)
+      followedMap.value = { ...followedMap.value, [targetUid]: next }
+      message.success(next ? '关注成功' : '已取消关注')
+      // 粉丝数本地 +1 / -1（搜索列表来自 ES，可能本来就不准）
+      if (item.userFollowInfo) {
+        const cur = item.userFollowInfo.fansCount ?? 0
+        item.userFollowInfo.fansCount = Math.max(0, cur + (next ? 1 : -1))
+      }
+    } else {
+      message.error(res?.msg || '关注失败')
+    }
+  } catch {
+    // 错误文案已在 request.ts 里弹出
+  } finally {
+    followingUid.value = null
+  }
+}
 
 /** 相对路径补全 COS host；已是完整 URL 则直接用 */
 const resolveAvatar = (avatar?: string | null) => {
@@ -67,30 +135,6 @@ const sexText = (sex?: number | null) => {
   if (sex === 1) return '男'
   if (sex === 2) return '女'
   return ''
-}
-
-const statusText = (status: number) => {
-  if (status === 1) return '在线'
-  if (status === 0) return '离线'
-  return String(status)
-}
-
-const formatDate = (value: string) => {
-  try {
-    return value.slice(0, 10)
-  } catch {
-    return value
-  }
-}
-
-const ipText = (ipInfo?: Record<string, unknown> | null) => {
-  if (!ipInfo) return ''
-  const region =
-    (ipInfo.region as string) ||
-    (ipInfo.city as string) ||
-    (ipInfo.province as string) ||
-    (ipInfo.ip as string)
-  return region || ''
 }
 
 const onAvatarError = (e: Event) => {

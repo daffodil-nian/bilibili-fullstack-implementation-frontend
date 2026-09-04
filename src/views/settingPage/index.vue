@@ -52,6 +52,7 @@
         <main class="setting-content">
           <InfoPanel v-if="activeKey === 'info'" />
           <MyAvatar v-else-if="activeKey === 'avatar'" />
+          <PrivacyPanel v-else-if="activeKey === 'privacy'" />
           <div v-else class="placeholder-panel">
             <h2 class="content-title">{{ activeLabel }}</h2>
             <p class="placeholder-text">功能开发中，敬请期待</p>
@@ -90,6 +91,7 @@ import { getUserInfo } from '../../services/userStorage.ts'
 import InfoPanel from './children/info.vue'
 import {onMounted} from 'vue'
 import MyAvatar from './children/MyAvatar.vue'
+import PrivacyPanel from './children/PrivacyPanel.vue'
 import {useRoute} from "vue-router";
 const route = useRoute()
 type MenuItem = {
@@ -116,6 +118,7 @@ const menuItems: MenuItem[] = [
   { key: 'points', label: '会员积分', icon: PayCircleOutlined },
   { key: 'info', label: '我的信息', icon: ProfileOutlined },
   { key: 'avatar', label: '我的头像', icon: PictureOutlined },
+  { key: 'privacy', label: '隐私设置', icon: LockOutlined },
   { key: 'fansMedal', label: '粉丝勋章', icon: TagOutlined },
   { key: 'achievement', label: '成就勋章', icon: TrophyOutlined },
   { key: 'security', label: '账号安全', icon: LockOutlined },

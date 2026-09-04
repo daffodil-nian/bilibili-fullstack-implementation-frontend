@@ -105,7 +105,7 @@ const switchTopTab = (code: number) => {
   activeTopTab.value = code
   activeSortCode.value = 0
   resultList.value = []
-  handleSearch()
+  // handleSearch()
 }
 
 const switchSort = (code: number) => {
@@ -131,6 +131,7 @@ const handleSearch = async () => {
       pageSize: 20,
     })
     resultList.value = list
+    console.log(resultList.value)
     updateTabCount(activeTopTab.value, list.length)
   } catch (e) {
     console.error('搜索失败', e)
