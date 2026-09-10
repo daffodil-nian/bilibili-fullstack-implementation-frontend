@@ -25,4 +25,7 @@ export default {
   userFans: (uid: number | string) => `/api/user/${uid}/fans`,
   /** 搜索（用户 Tab 等） */
   searchAll: `/api/search/all`,
+
+  //可以获取到粉丝信息和关注信息数量的接口是，/{targetUid}/space，
+
 }

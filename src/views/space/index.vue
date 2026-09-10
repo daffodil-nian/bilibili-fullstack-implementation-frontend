@@ -83,7 +83,8 @@
         :class="{ active: activeTab === tab.key }"
         @click="activeTab = tab.key"
       >
-        <span class="space-tab-icon">{{ tab.icon }}</span>
+        <!-- <span class="space-tab-icon">{{ tab.icon }}</span> -->
+         <img class="space-tab-icon" :src="tab.icon" alt="" />
         <span class="space-tab-text">{{ tab.label }}</span>
         <span v-if="tab.count != null" class="space-tab-count">{{ tab.count }}</span>
       </div>
@@ -138,6 +139,9 @@
         <p>更多设置请前往个人中心</p>
         <a-button type="link" @click="goToProfile">打开个人中心</a-button>
       </div>
+      <FollowPanel
+      v-else-if="activeTab==='follows'||activeTab==='fans'"
+      />
     </template>
   </div>
 
@@ -201,6 +205,8 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
+import FollowPanel from '../follow/components/FollowPanel/index.vue'
+import { useFollowStore } from '../../stores/follow.ts'
 import BilibiliHeader from '../../components/layout/BilibiliHeader.vue'
 import HeaderBanner from '../../components/header/index.vue'
 import biliLogo from '../../assets/bilibili_blue_logo.png'
@@ -216,6 +222,15 @@ import {
   type UserSimpleVO,
   type UserSpaceVO,
 } from '../../services/api'
+
+import homeNormal from '../../assets/icons/home/homePage.png'
+import dynamicNormal from '../../assets/icons/home/windmill.png'
+import TvNormal from '../../assets/icons/home/tv.png'
+import hejiNormal from '../../assets/icons/home/summary.png'
+import collectionNormal from '../../assets/icons/home/collect.png'
+import loveNormal from '../../assets/icons/home/love.png'
+import settingNormal from '../../assets/icons/home/setting.png'
+
 
 const bannerHeight = 255
 const route = useRoute()
@@ -252,13 +267,13 @@ const listKind = ref<'follows' | 'fans'>('follows')
 
 const activeTab = ref('home')
 const allTabs = [
-  { key: 'home', label: '主页', icon: '🏠' },
-  { key: 'dynamic', label: '动态', icon: '🌸' },
-  { key: 'video', label: '投稿', icon: '📺', count: 0 },
-  { key: 'collection', label: '合集和系列', icon: '📚' },
-  { key: 'fav', label: '收藏', icon: '⭐', count: 0 },
-  { key: 'bangumi', label: '追番追剧', icon: '❤️' },
-  { key: 'setting', label: '设置', icon: '⚙️', selfOnly: true },
+  { key: 'home', label: '主页', icon:homeNormal },
+  { key: 'dynamic', label: '动态', icon: dynamicNormal },
+  { key: 'video', label: '投稿', icon: TvNormal, count: 0 },
+  { key: 'collection', label: '合集和系列', icon: collectionNormal },
+  { key: 'fav', label: '收藏', icon: loveNormal, count: 0 },
+  { key: 'bangumi', label: '追番追剧', icon: hejiNormal },
+  { key: 'setting', label: '设置', icon: settingNormal, selfOnly: true },
 ]
 
 const visibleTabs = computed(() =>
@@ -389,17 +404,24 @@ async function onFollow() {
   }
 }
 
+//这是打开follows的一个方法，执行它页面内容就切换成自定义的写法了
+
 async function openFollows() {
   // 自己永远能看；别人看 showFollowList
   if (!isSelf.value && otherSpace.value?.showFollowList === false) {
     message.warning('该用户已设置关注列表不可见')
     return
   }
-  listKind.value = 'follows'
-  listTitle.value = '关注列表'
-  listPage.value = 1
-  listVisible.value = true
-  await loadRelationList()
+  // listKind.value = 'follows'
+  // listTitle.value = '关注列表'
+  // listPage.value = 1
+  // listVisible.value = true
+  // await loadRelationList()
+  activeTab.value = 'follows'
+
+  //然后就对接前端的一个面板，这里就调用useFollowStore中的switchSide去切换面板
+  await useFollowStore().switchSide('follows');
+
 }
 
 async function openFans() {
@@ -407,11 +429,12 @@ async function openFans() {
     message.warning('该用户已设置粉丝列表不可见')
     return
   }
-  listKind.value = 'fans'
-  listTitle.value = '粉丝列表'
-  listPage.value = 1
-  listVisible.value = true
-  await loadRelationList()
+  //和上面同理
+  activeTab.value = 'fans'
+
+  //然后就调用userFollowStore中的switchSide去切换面板
+  await useFollowStore().switchSide('fans');//这个方法会调用后端接口，到时候可以实现翻页效果
+
 }
 
 async function loadRelationList() {

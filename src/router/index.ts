@@ -25,6 +25,12 @@ const routes =[
         path:'/settingPage',
         component: settingPage
     }
+    ,{
+        // 这是关注页面的模块哦
+        path:'/follow',
+        component:()=>import("../views/follow/index.vue"),
+    }
+
 ]
 
 const router =createRouter({

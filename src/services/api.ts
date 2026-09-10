@@ -1,88 +1,24 @@
 // 这是一个负责给前端提供API的文件
 import { get, post, put, postForm } from './request'
 import urls from './urls'
-import type { UserBaseInfo, UpdateSignatureReq } from './types'
+import type { UserBaseInfo, UpdateSignatureReq, UserFollowReq } from './types'
+import type {UserSpaceVO,UserPrivacyVO, UserSimpleVO, SearchAllParams, SearchAllResult,LoginParams,LoginResult,RegisterParams} from './types'
+export { SearchType } from './types'
+export type {
+  SearchArticleItem,
+  SearchUserItem,
+  SearchVideoItem,
+  UserSimpleVO,
+  UserPrivacyVO,
+  UserFollowReq
+  // ...
+} from './types'
 
 /**
  * 后端 SearchTypeEnum
  * VIDEO(1) USER(2) POST(3) ANIME(4) LIVE(5) ARTICLE(6)
  */
-export const SearchType = {
-  VIDEO: 1,
-  USER: 2,
-  POST: 3,
-  ANIME: 4,
-  LIVE: 5,
-  ARTICLE: 6,
-} as const
 
-/** 搜索请求参数（对齐后端 SearchEsReq） */
-export interface SearchAllParams {
-  keyword: string
-  searchType: number
-  sortCode?: number
-  currentNum?: number
-  pageSize?: number
-}
-
-/** 搜索返回中的用户项（对齐后端 UserVO / 控制台实际字段） */
-export interface SearchUserItem {
-  uid?: number
-  UID?: number
-  nickname?: string
-  avatar?: string | null
-  signature?: string | null
-  sex?: number | null
-  birthDay?: string | null
-  activeStatus?: number | null
-  ipInfo?: Record<string, unknown> | null
-  videoCount?: number | null
-  userFollowInfo?: {
-    fansCount?: number | null
-    followCount?: number | null
-  } | null
-  userLvInfo?: {
-    level?: number | null
-    levelName?: string | null
-    needAddExp?: number | null
-    totalExp?: number | null
-  } | null
-}
-
-/** 搜索返回中的专栏/文章项（对齐后端 ArticleSearchVO） */
-export interface SearchArticleItem {
-  articleId?: number
-  category?: number
-  title?: string
-  cover?: string
-  summary?: string
-  tag?: string
-  userId?: number
-  authorNickname?: string
-  likeCount?: number
-  commentCount?: number
-  clickCount?: number
-  publishTime?: string
-}
-
-/** 预留：视频等后续后端补齐字段 */
-export interface SearchVideoItem {
-  videoId?: number
-  title?: string
-  cover?: string
-  playCount?: number
-  danmakuCount?: number
-  authorNickname?: string
-  publishTime?: string
-}
-
-export interface SearchAllResult {
-  userList?: SearchUserItem[]
-  articleList?: SearchArticleItem[]
-  videoList?: SearchVideoItem[]
-  currentNum?: number
-  pageSize?: number
-}
 
 // ==================== 通用类型 ====================
 
@@ -93,23 +29,6 @@ export interface ApiResponse<T = unknown> {
   data: T
 }
 
-// ==================== 请求参数类型 ====================
-
-/** 登录请求参数 */
-export interface LoginParams {
-  username: string
-  password: string
-}
-
-/** 登录响应：data 即为用户信息 */
-export type LoginResult = UserBaseInfo
-
-/** 注册请求参数 */
-export interface RegisterParams {
-  username: string
-  password: string
-  checkPassword: string
-}
 
 // ==================== 认证 API ====================
 
@@ -156,55 +75,10 @@ export function changeNickname(params: {nickname:string}){
 }
 
 /** 关注 / 取消关注（后端 toggle），body 只需被关注者 u_id */
-export function followUser(params: { followId: number }) {
+export function followUser(params: UserFollowReq) {
   return post(urls.userFollow, params) as Promise<ApiResponse<boolean>>
 }
 
-/** 个人空间 VO（对齐后端 UserSpaceVO） */
-export interface UserSpaceVO {
-  uid: number
-  nickname?: string
-  avatar?: string
-  birthday?: string | null
-  level?: number
-  signature?: string
-  followCount?: number
-  fansCount?: number
-  likeCount?: number
-  playCount?: number
-  showFollowList?: boolean
-  showFansList?: boolean
-  followed?: boolean
-}
-
-/** 关注/粉丝列表行（对齐后端 UserSimpleVO） */
-export interface UserSimpleVO {
-  uid: number
-  nickname?: string
-  avatar?: string
-  signature?: string
-  level?: number
-  followed?: boolean
-}
-
-/** 隐私开关（对齐后端 UserPrivacyReq，Boolean） */
-export interface UserPrivacyVO {
-  showCollect?: boolean
-  showBirthdayAndTag?: boolean
-  showComic?: boolean
-  showBangumi?: boolean
-  showSchoolInfo?: boolean
-  showFansDecorate?: boolean
-  showCoinVideo?: boolean
-  showGame?: boolean
-  showLiveReplay?: boolean
-  showLikeVideo?: boolean
-  showFansMedal?: boolean
-  showClassVideo?: boolean
-  showFollowList?: boolean
-  showFansList?: boolean
-  showChargeVideo?: boolean
-}
 
 /** 个人空间主页 */
 export function getUserSpace(targetUid: number) {
@@ -238,6 +112,8 @@ export function listFans(targetUid: number, page = 1, size = 24) {
 export function searchAll(params: SearchAllParams) {
   return post(urls.searchAll, params) as Promise<ApiResponse<SearchAllResult>>
 }
+
+
 
 // ==================== 默认导出 ====================
 export default {

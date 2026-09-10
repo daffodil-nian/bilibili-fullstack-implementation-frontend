@@ -1,0 +1,57 @@
+.follow-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px 12px;
+  border-bottom: 1px solid #e3e5e7;
+}
+.follow-card__avatar {
+  flex-shrink: 0;
+}
+.follow-card__body {
+  min-width: 0;
+  flex: 1;
+  // margin-left:10px;
+}
+.follow-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 10px;
+  color: #18191c;
+  line-height: 1.4;
+}
+.follow-card__sign {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9499a0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.follow-card__btn {
+  margin-top: 8px;
+  padding: 2px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 22px;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  &.is-plain {
+    border: 1px solid #e3e5e7;
+    background: #f1f2f3;
+    color: #61666d;
+    &:not(:disabled):hover {
+      background: #e3e5e7;
+    }
+  }
+  &.is-primary {
+    border: 1px solid #00aeec;
+    background: #00aeec;
+    color: #fff;
+    &:not(:disabled):hover {
+      background: #00a1d6;
+    }
+  }
+}
