@@ -87,8 +87,13 @@ const followStore = useFollowStore()
 // )
 
 
-const followCount =computed(()=>followStore.myFollowCount??0)
-const fansCount =computed(()=>followStore.myFansCount??0)
+const currentUser = computed(() => getUserInfo())
+const followCount =computed(()=>followStore.myFollowCount!=0?
+followStore.myFollowCount:
+currentUser.value?.userFollowInfo?.followCount??0)
+const fansCount =computed(()=>followStore.myFansCount!=0?
+followStore.myFansCount:
+currentUser.value?.userFollowInfo?.fansCount??0)
 
 /** 点「全部关注 / 我的粉丝」→ store 去拉列表 */
 const handleSwitch = (key: 'follows' | 'fans') => {

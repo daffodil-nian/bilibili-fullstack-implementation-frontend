@@ -344,9 +344,20 @@ const displaySign = computed(() => {
 //   return otherSpace.value?.fansCount ?? 0
 // })
 
-const followCount =computed(()=>followStore.myFollowCount??0)
-const fansCount =computed(()=>followStore.myFansCount??0)
-
+const followCount =computed(()=>followStore.myFollowCount!=0?
+followStore.myFollowCount:
+currentUser.value?.userFollowInfo?.followCount??0)
+const fansCount =computed(()=>followStore.myFansCount!=0?
+followStore.myFansCount:
+currentUser.value?.userFollowInfo?.fansCount??0)
+// const followCount = computed(() => {
+//   if (isSelf.value) return followStore.myFollowCount
+//   return otherSpace.value?.followCount ?? 0
+// })
+// const fansCount = computed(() => {
+//   if (isSelf.value) return followStore.myFansCount
+//   return otherSpace.value?.fansCount ?? 0
+// })
 
 const displayBirthday = computed(() => {
   if (isSelf.value) return currentUser.value?.birthDay || currentUser.value?.birthday || ''

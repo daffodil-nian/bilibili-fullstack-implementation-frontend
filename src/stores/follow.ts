@@ -25,6 +25,27 @@ const myFansCount = ref(0)
 
 
 
+function syncCountFromStorage(){
+    const info=getUserInfo()?.userFollowInfo
+    myFollowCount.value=info?.followCount||0
+    myFansCount.value=info?.fansCount||0
+}
+async function refreshMyFollowInfo() {
+    const me = getUserInfo()?.uid
+    if (me == null) return
+    const res = await getUserSpace(me)
+    const followCount = res?.data?.followCount
+    const fansCount = res?.data?.fansCount
+    // 拿不到有效数字就不动，避免写成 0
+    if (typeof followCount !== 'number' || typeof fansCount !== 'number') {
+      console.error('getUserSpace 人数异常', res)
+      return
+    }
+    myFollowCount.value = followCount
+    myFansCount.value = fansCount
+    updateUserField('userFollowInfo', { followCount, fansCount })
+  }
+
     //把上面的参数准备好之后，咱就要开始封装了~
 
     //最好能够封装的让人能看懂！
@@ -81,19 +102,8 @@ const myFansCount = ref(0)
         //因为是Boolean类型，所以不需要写
         
         await followUser(req);
-        const me = getUserInfo()?.uid
-  if (me != null) {
-    const res = await getUserSpace(me) //获取我的用户信息，然后更新值
-    const followCount = res.data?.followCount ?? 0
-    const fansCount = res.data?.fansCount ?? 0
-    updateUserField('userFollowInfo', {
-      followCount,
-      fansCount,
-    })
-    myFollowCount.value = followCount
-    myFansCount.value = fansCount
-  }
-        await fetchList();
+       await refreshMyFollowInfo()  // 已有类型判断，别再用 ?? 0
+  await fetchList()
 
     }
 
@@ -116,7 +126,9 @@ const myFansCount = ref(0)
         activeKey.value='follows';//默认follows
         page.value=1;
         finished.value=false;
-        await fetchList();
+         syncCountFromStorage()
+  await refreshMyFollowInfo()
+  await fetchList()
     }
 
     async function switchSide(key:'follows' | 'fans'){
@@ -142,6 +154,8 @@ const myFansCount = ref(0)
         toggleFollow,
         myFollowCount,
         myFansCount,
+        syncCountFromStorage,
+        refreshMyFollowInfo
 
     }
 
