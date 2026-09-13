@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { listFans, listFollows,followUser} from '../services/api'
-import { getUserInfo } from '../services/userStorage'
+import { listFans, listFollows,followUser,getUserSpace} from '../services/api'
+import { getUserInfo, updateUserField } from '../services/userStorage'
 import type { UserSimpleVO,UserFollowReq } from '../services/types';
 
 
@@ -17,6 +17,13 @@ export const useFollowStore=defineStore('follow',()=>{
     const loading=ref(false);//是否正在加载,准确说是上一个列表是否正在加载,因为可能还有下一页
     
     const finished=ref(false);//是否以及没有下一页了
+
+
+    
+const myFollowCount = ref(0)
+const myFansCount = ref(0)
+
+
 
     //把上面的参数准备好之后，咱就要开始封装了~
 
@@ -72,7 +79,20 @@ export const useFollowStore=defineStore('follow',()=>{
             followId:targetUid,
         }
         //因为是Boolean类型，所以不需要写
+        
         await followUser(req);
+        const me = getUserInfo()?.uid
+  if (me != null) {
+    const res = await getUserSpace(me) //获取我的用户信息，然后更新值
+    const followCount = res.data?.followCount ?? 0
+    const fansCount = res.data?.fansCount ?? 0
+    updateUserField('userFollowInfo', {
+      followCount,
+      fansCount,
+    })
+    myFollowCount.value = followCount
+    myFansCount.value = fansCount
+  }
         await fetchList();
 
     }
@@ -119,7 +139,9 @@ export const useFollowStore=defineStore('follow',()=>{
         size,
         loading,
         finished,
-        toggleFollow
+        toggleFollow,
+        myFollowCount,
+        myFansCount,
 
     }
 

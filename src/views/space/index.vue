@@ -275,11 +275,12 @@ const allTabs = [
   { key: 'bangumi', label: '追番追剧', icon: hejiNormal },
   { key: 'setting', label: '设置', icon: settingNormal, selfOnly: true },
 ]
-
+const myFollowCount = ref(0)
+const myFansCount = ref(0)
 const visibleTabs = computed(() =>
   allTabs.filter((t) => !(t as { selfOnly?: boolean }).selfOnly || isSelf.value),
 )
-
+const followStore= useFollowStore()
 /**
  * 自己：读 localStorage
  * 别人：调 GET /api/user/{uid}/space
@@ -333,15 +334,19 @@ const displaySign = computed(() => {
   return otherSpace.value?.signature || '这个人很调皮，什么也不留下！22娘都看不下去了！'
 })
 
-const followCount = computed(() => {
-  if (isSelf.value) return currentUser.value?.userFollowInfo?.followCount ?? 0
-  return otherSpace.value?.followCount ?? 0
-})
+// const followCount = computed(() => {
+//   if (isSelf.value) return currentUser.value?.userFollowInfo?.followCount ?? 0
+//   return otherSpace.value?.followCount ?? 0
+// })
 
-const fansCount = computed(() => {
-  if (isSelf.value) return currentUser.value?.userFollowInfo?.fansCount ?? 0
-  return otherSpace.value?.fansCount ?? 0
-})
+// const fansCount = computed(() => {
+//   if (isSelf.value) return currentUser.value?.userFollowInfo?.fansCount ?? 0
+//   return otherSpace.value?.fansCount ?? 0
+// })
+
+const followCount =computed(()=>followStore.myFollowCount??0)
+const fansCount =computed(()=>followStore.myFansCount??0)
+
 
 const displayBirthday = computed(() => {
   if (isSelf.value) return currentUser.value?.birthDay || currentUser.value?.birthday || ''
@@ -452,27 +457,81 @@ async function loadRelationList() {
     listLoading.value = false
   }
 }
-
 async function toggleListFollow(u: UserSimpleVO) {
   if (meUid.value == null) {
     message.warning('请先登录')
     return
   }
+
+  // 1. 只负责关注/取关
   await followUser({ followId: u.uid })
+
+  // 2. 本地按钮状态先翻（或等列表刷新再改，二选一）
   u.followed = !u.followed
-  // 自己主页关注数在 local，简单 ±1；别人主页重新拉 space
-  if (isSelf.value && currentUser.value?.userFollowInfo) {
-    const delta = u.followed ? 1 : -1
-    currentUser.value.userFollowInfo.followCount = Math.max(
-      0,
-      (currentUser.value.userFollowInfo.followCount ?? 0) + delta,
-    )
-    updateUserField('userFollowInfo', currentUser.value.userFollowInfo)
-  } else if (!isSelf.value) {
+
+  if (isSelf.value) {
+    // 3. 自己主页：再拉「我」的 space，拿最新关注数/粉丝数
+    const res = await getUserSpace(meUid.value)
+    const followCount = res.data?.followCount ?? 0
+    const fansCount = res.data?.fansCount ?? 0
+
+    const next = {
+      ...(getUserInfo()?.userFollowInfo ?? currentUser.value?.userFollowInfo ?? {
+        followCount: 0,
+        fansCount: 0,
+      }),
+      followCount,
+      fansCount,
+    }
+ myFollowCount.value = followCount   // 必须有这两个 ref
+    myFansCount.value = fansCount
+    loadSpace()
+    // 页面上立刻变
+    if (currentUser.value) {
+      currentUser.value.userFollowInfo = next
+    }
+    // localStorage 同步
+    updateUserField('userFollowInfo', next)
+
+    // 不要再写 delta ±1 了
+  } else {
+    // 4. 别人主页：拉对方 space（对方的粉丝数等会变）
     const res = await getUserSpace(targetUid.value)
     otherSpace.value = res.data
+
+    // 可选：如果顶部也显示「我」的关注数，再拉一次自己
+    // const mine = await getUserSpace(meUid.value)
+    // updateUserField('userFollowInfo', { ... , followCount: mine.data.followCount, ... })
   }
 }
+// async function toggleListFollow(u: UserSimpleVO) {
+//   if (meUid.value == null) {
+//     message.warning('请先登录')
+//     return
+//   }
+//   await followUser({ followId: u.uid })
+//   u.followed = !u.followed
+
+//   const me=getUserInfo()?.uid
+//   const res = await getUserSpace(me!)
+//   // 自己主页关注数在 local，简单 ±1；别人主页重新拉 space
+//   if (isSelf.value && currentUser.value?.userFollowInfo) {
+//     const delta = u.followed ? 1 : -1
+//     currentUser.value.userFollowInfo.followCount = Math.max(
+//       0,
+//       (currentUser.value.userFollowInfo.followCount ?? 0) + delta,
+//     )
+//     updateUserField('userFollowInfo',
+//     {
+//     ...getUserInfo()!.userFollowInfo,
+//     followCount:res.data.followCount??0,
+//     fansCount:res.data.fansCount??0,
+//   })
+//   } else if (!isSelf.value) {
+//     const res = await getUserSpace(targetUid.value)
+//     otherSpace.value = res.data
+//   }
+// }
 
 function goUserSpace(uid: number) {
   window.open(`/space/${uid}`, '_blank')

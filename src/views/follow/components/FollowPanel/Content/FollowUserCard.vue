@@ -18,15 +18,24 @@ const clicking = ref(false);
 
 //其实我还有一个问题，就是如果关注了再点击这个会不会是取关的呀，我知道了这不是按按钮关注的意思，而是判断是否关注了的！
 const btnText=computed(()=>{
-    if(props.mode==='follows'){
-        return '已关注!!';
+    // if(props.mode==='follows'){
+    //     return '已关注!!';
+    // }
+    // return props.user.followed?'已关注':'关注';
+
+    if(props.user.isMutualFollow){
+      return '已互粉'
     }
-    return props.user.followed?'已关注':'关注';
+    if(props.user.followed){
+      return '已关注'
+    }
+    else return '关注'
 })
 
 const handleClick = () =>{
     if(clicking.value) return;
     emit('toggle',props.user.uid);
+    
 }
 
 const btnClass = computed(() => ({

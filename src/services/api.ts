@@ -3,6 +3,7 @@ import { get, post, put, postForm } from './request'
 import urls from './urls'
 import type { UserBaseInfo, UpdateSignatureReq, UserFollowReq } from './types'
 import type {UserSpaceVO,UserPrivacyVO, UserSimpleVO, SearchAllParams, SearchAllResult,LoginParams,LoginResult,RegisterParams} from './types'
+import { updateUserField } from './userStorage'
 export { SearchType } from './types'
 export type {
   SearchArticleItem,
@@ -76,6 +77,20 @@ export function changeNickname(params: {nickname:string}){
 
 /** 关注 / 取消关注（后端 toggle），body 只需被关注者 u_id */
 export function followUser(params: UserFollowReq) {
+/*
+把这个也改改，改成用计算属性
+const followCount = computed(() => {
+  if (isSelf.value) return currentUser.value?.userFollowInfo?.followCount ?? 0
+  return otherSpace.value?.followCount ?? 0
+})
+
+export function updateUserField<K extends keyof UserBaseInfo>(
+  field:K,
+  value:UserBaseInfo[K]
+)
+  即时修改这个
+*/
+// updateUserField('userFollowInfo',{});
   return post(urls.userFollow, params) as Promise<ApiResponse<boolean>>
 }
 

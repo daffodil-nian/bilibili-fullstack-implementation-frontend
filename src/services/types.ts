@@ -105,6 +105,7 @@ export interface UserSimpleVO {
   signature?: string
   level?: number
   followed?: boolean
+  isMutualFollow?: boolean
 }
 
 /** 隐私开关（对齐后端 UserPrivacyReq，Boolean） */

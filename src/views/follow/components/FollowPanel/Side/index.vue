@@ -79,12 +79,17 @@ const followStore = useFollowStore()
 /** 人数：和空间页右上角一样，读登录用户本地信息（不要写 followStore.followCount） */
 
 //计算用户的个数，可以在getUserInfo()中获取
-const followCount = computed(
-  () => getUserInfo()?.userFollowInfo?.followCount ?? 0,
-)
-const fansCount = computed(
-  () => getUserInfo()?.userFollowInfo?.fansCount ?? 0,
-)
+// const followCount = computed(
+//   () => getUserInfo()?.userFollowInfo?.followCount ?? 0,
+// )
+// const fansCount = computed(
+//   () => getUserInfo()?.userFollowInfo?.fansCount ?? 0,
+// )
+
+
+const followCount =computed(()=>followStore.myFollowCount??0)
+const fansCount =computed(()=>followStore.myFansCount??0)
+
 /** 点「全部关注 / 我的粉丝」→ store 去拉列表 */
 const handleSwitch = (key: 'follows' | 'fans') => {
   followStore.switchSide(key)
