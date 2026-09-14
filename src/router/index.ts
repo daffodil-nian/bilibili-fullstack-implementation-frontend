@@ -29,6 +29,10 @@ const routes =[
         // 这是关注页面的模块哦
         path:'/follow',
         component:()=>import("../views/follow/index.vue"),
+    },
+    {
+        path: '/message',
+  component: () => import('../views/message/index.vue'),
     }
 
 ]

@@ -196,6 +196,7 @@
         >
           {{ u.followed ? '已关注' : '+ 关注' }}
         </button>
+       
       </div>
     </div>
   </a-drawer>
@@ -222,6 +223,7 @@ import {
   type UserSimpleVO,
   type UserSpaceVO,
 } from '../../services/api'
+import ChatEntryButton from '../../components/chat/ChatEntryButton.vue'
 
 import homeNormal from '../../assets/icons/home/homePage.png'
 import dynamicNormal from '../../assets/icons/home/windmill.png'

@@ -208,3 +208,34 @@ export interface SearchAllResult {
 export interface UserFollowReq{
   followId?:number
 }
+
+
+
+
+
+
+
+
+
+// 聊天功能相关的类型定义
+
+export interface ContactItemVO{
+  roomId?:number
+  peerUid?:number
+  peerNickname?:string
+  peerAvatar?:string
+  lastMsgId?:number
+  lastContent?:string
+  unreadCount?:number
+  activeTime?:string
+
+}
+
+export interface ChatMessageVO{
+  msgId?:number
+  roomId?:number
+  fromUid?:number
+  content?:string
+  type?:number
+  createTime?:string
+}

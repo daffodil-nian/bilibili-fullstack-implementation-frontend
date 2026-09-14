@@ -1,7 +1,7 @@
 // 这是一个负责给前端提供API的文件
 import { get, post, put, postForm } from './request'
 import urls from './urls'
-import type { UserBaseInfo, UpdateSignatureReq, UserFollowReq } from './types'
+import type { UserBaseInfo, UpdateSignatureReq, UserFollowReq, ContactItemVO, ChatMessageVO } from './types'
 import type {UserSpaceVO,UserPrivacyVO, UserSimpleVO, SearchAllParams, SearchAllResult,LoginParams,LoginResult,RegisterParams} from './types'
 import { updateUserField } from './userStorage'
 export { SearchType } from './types'
@@ -129,6 +129,22 @@ export function searchAll(params: SearchAllParams) {
 }
 
 
+/**
+ * 聊天通讯功能
+ */
+export function listChatContacts(){
+  return get(urls.chatContacts) as Promise<ApiResponse<ContactItemVO[]>>
+}
+export function listChatMessages(roomId:number,limit=50){
+  return get(urls.chatMessages,{roomId,limit}) as Promise<ApiResponse<ChatMessageVO[]>>
+}
+export function sendChatText(body:{targetUid:number;content:string}){
+  return post(urls.chatSendText,body) as Promise<ApiResponse<number>>
+}
+export function markChatRead(roomId:number){
+  return post(`${urls.chatRead}?roomId=${roomId}`) as Promise<ApiResponse<void>>
+}
+
 
 // ==================== 默认导出 ====================
 export default {
@@ -144,5 +160,8 @@ export default {
   updatePrivacy,
   listFollows,
   listFans,
+  listChatContacts,
+  listChatMessages,
+
   // changeAvatar
 }

@@ -28,4 +28,14 @@ export default {
 
   //可以获取到粉丝信息和关注信息数量的接口是，/{targetUid}/space，
 
+
+  /**
+   * 
+   * 单聊功能
+   */
+  chatContacts: `/api/chat/contacts`,
+  chatMessages: `/api/chat/messages`,
+  chatRead: `/api/chat/read`,
+  chatSendText:`/api/chat/send/text`
+
 }

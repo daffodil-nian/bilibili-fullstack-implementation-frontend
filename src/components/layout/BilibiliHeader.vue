@@ -216,7 +216,10 @@
 
     <!-- 4. 右侧导航与投稿区域 -->
     <div class="nav-right">
-      <div v-for="item in nav_right" :key="item.title" class="nav-item">
+      <div v-for="item in nav_right" :key="item.title" 
+      class="nav-item"
+      @click="onNavRightClick(item)"
+      >
         <component :is="item.icon" class="nav-icon" />
         <span class="nav-text">{{ item.title }}</span>
       </div>
@@ -252,6 +255,14 @@ const props = withDefaults(defineProps<{
 }>(), {
   withBanner: false,
 })
+
+function onNavRightClick(item:DataItem){
+  if(!item.path)return
+  // router.push(item.path)
+
+   const route = router.resolve(item.path)
+  window.open(route.href, '_blank')
+}
 
 const router = useRouter()
 
@@ -318,7 +329,8 @@ onUnmounted(() => {
 
 interface DataItem {
   title: string;
-  icon?: any
+  icon?: any;
+  path?:string
 }
 
 // 核心计算属性：用来判断当前弹窗属于“登录”还是“注册”流程
@@ -474,7 +486,7 @@ const nav_left: DataItem[] = [
 
 const nav_right: DataItem[] = [
   { title: '大会员', icon: AliwangwangOutlined },
-  { title: '消息', icon: MessageOutlined },
+  { title: '消息', icon: MessageOutlined,path:"/message" },
   { title: '动态', icon: AliwangwangOutlined },
   { title: '收藏', icon: StarOutlined },
   { title: '历史', icon: ClockCircleOutlined },
