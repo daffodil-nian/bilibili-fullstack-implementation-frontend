@@ -7,7 +7,9 @@
   }
  }"
  >
-  <div class="nav-box" :class="navThemeClass">
+  <div class="nav-box" 
+  :class="navThemeClass"
+  :style="{ '--nav-bg-opacity': String(props.bgOpacity) }"">
     <!-- 1. 左侧导航区域 -->
     <div class="nav-left">
       <div v-for="item in nav_left" :key="item.title" class="nav-item">
@@ -251,9 +253,11 @@ import type { UserBaseInfo } from '../../services/types'
 
 const props = withDefaults(defineProps<{
   /** 首页叠在头图上时开启：滚动前白字，滚过后黑字 */
-  withBanner?: boolean
+  withBanner?: boolean,
+  bgOpacity?: number
 }>(), {
   withBanner: false,
+  bgOpacity: 1
 })
 
 function onNavRightClick(item:DataItem){

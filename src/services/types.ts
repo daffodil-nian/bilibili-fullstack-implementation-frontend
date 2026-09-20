@@ -238,4 +238,8 @@ export interface ChatMessageVO{
   content?:string
   type?:number
   createTime?:string
+  
 }
+
+
+//  表情包管理模块

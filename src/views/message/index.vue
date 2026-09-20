@@ -1,12 +1,18 @@
 <!-- views/message/index.vue -->
 <template>
-  <MessagePanel />
+<div class="message-layout">
+  <BilibiliHeader :with-banner="false" :banner-height="bannerHeight" :bg-opacity="0.5" />
+  <MessagePanel class="message-panel"/>
+</div>
 </template>
 <script setup lang="ts">
+// import {} from 
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import MessagePanel from './components/MessagePanel/index.vue'
 import { useChatStore } from '../../stores/chat'
+import BilibiliHeader from '../../components/layout/BilibiliHeader.vue'
+const bannerHeight = 200
 
 const route = useRoute()
 const chatStore = useChatStore()
@@ -19,3 +25,13 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.message-layout {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  }
+  .message-panel{
+    background-color: #d6eaea;
+  }
+</style>
