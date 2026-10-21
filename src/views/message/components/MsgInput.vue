@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 
 import EmoticonPanel from '../../../components/emoticon/EmoticonPanel.vue'
+import CustomEmoticonPanel from '../../../components/emoticon/CustomEmoticonPanel.vue'
+const showCustom = ref(false)
 const emit = defineEmits<{ send: [content: string] }>()
 const text = ref('')
 const showEmoji = ref(false)
@@ -15,6 +17,14 @@ function onPickEmoji(code: string) {
   text.value += code
   // 可选：showEmoji.value = false
 }
+
+
+function onPickCustom(item: { code: string; url: string }) {
+  if (!item.url) return
+  emit('send', item.url)
+  showCustom.value = false
+}
+
 </script>
 
 <template>
@@ -23,6 +33,12 @@ function onPickEmoji(code: string) {
       <button type="button" class="tool-btn" title="图片">🖼</button>
       <!-- 相对定位容器：面板相对这个按钮往上弹 -->
       <div class="emoji-wrap">
+        <button type="button" class="tool-btn" title="自定义表情" @click="showCustom = !showCustom">
+      +
+    </button>
+     <div v-if="showCustom" class="emoji-popup">
+      <CustomEmoticonPanel @pick="onPickCustom" />
+    </div>
         <button
           type="button"
           class="tool-btn"

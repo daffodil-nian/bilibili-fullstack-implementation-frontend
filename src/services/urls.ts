@@ -33,9 +33,40 @@ export default {
    * 
    * 单聊功能
    */
-  chatContacts: `/api/chat/contacts`,
+   chatContacts: `/api/chat/contacts`,
   chatMessages: `/api/chat/messages`,
   chatRead: `/api/chat/read`,
-  chatSendText:`/api/chat/send/text`
+  chatSendText: `/api/chat/send/text`,
+  chatCreateGroup: `/api/chat/group/create`,
+  chatSendGroupText: `/api/chat/send/group/text`,
+
+  /**
+   * 群聊接口
+   */
+
+  
+  // ==================== 群聊管理 ====================
+  /** 群资料 */
+  chatGroupInfo: (roomId: number | string) => `/api/chat/group/${roomId}`,
+  /** 群成员列表 */
+  chatGroupMembers: (roomId: number | string) => `/api/chat/group/${roomId}/members`,
+  /** 改群名 */
+  chatGroupName: (roomId: number | string) => `/api/chat/group/${roomId}/name`,
+  /** 改群公告 */
+  chatGroupNotice: (roomId: number | string) => `/api/chat/group/${roomId}/notice`,
+  /** 上传群头像 */
+  chatGroupAvatar: (roomId: number | string) => `/api/chat/group/${roomId}/avatar`,
+  /** 邀请成员（POST 同一个 members 路径） */
+  chatGroupInvite: (roomId: number | string) => `/api/chat/group/${roomId}/members`,
+  /** 移出成员 */
+  chatGroupKick: (roomId: number | string, targetUid: number | string) =>
+    `/api/chat/group/${roomId}/members/${targetUid}/remove`,
+  /** 退群 */
+  chatGroupQuit: (roomId: number | string) => `/api/chat/group/${roomId}/quit`,
+  /** 解散群 */
+  chatGroupDissolve: (roomId: number | string) => `/api/chat/group/${roomId}/dissolve`,
+  /** 设置管理员 */
+  chatGroupRole: (roomId: number | string, targetUid: number | string) =>
+    `/api/chat/group/${roomId}/members/${targetUid}/role`,
 
 }

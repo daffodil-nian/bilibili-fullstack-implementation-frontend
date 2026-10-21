@@ -1,102 +1,227 @@
-import {ref,computed} from "vue"
-import {defineStore} from "pinia"
-import type{ContactItemVO,ChatMessageVO} from "../services/types"
-import {listChatContacts,listChatMessages,markChatRead,sendChatText} from "../services/api"
-import {getUserInfo} from "../services/userStorage"
+import { ref, computed } from "vue"
+import { defineStore } from "pinia"
+import type { ContactItemVO, ChatMessageVO,GroupInfoVO,GroupMemberVO } from "../services/types"
+import {
+  listChatContacts,
+  listChatMessages,
+  markChatRead,
+  sendChatText,
+  sendChatGroupText,
+  dissolveChatGroup,
+  quitChatGroup,
+  setChatGroupMemberRole,
+  kickChatGroupMember,
+  inviteChatGroupMembers,
+  uploadChatGroupAvatar,
+  updateChatGroupNotice,
+  updateChatGroupName,
+  listChatGroupMembers,
+  getChatGroupInfo,
+} from "../services/api"
+import { getUserInfo } from "../services/userStorage"
 
-export const useChatStore = defineStore('chat',()=>{
-    //这个是联系人的写法
-    //聊天框框肯定有联系人对吧
+export const useChatStore = defineStore("chat", () => {
+  const contacts = ref<ContactItemVO[]>([])
+  const currentRoomId = ref<number | null>(null)
+  const currentPeerUid = ref<number | null>(null)
+  const messages = ref<ChatMessageVO[]>([])
+  const loading = ref(false)
 
-    const contacts= ref<ContactItemVO[]>([])
-    const currentRoomId=ref<number | null>(null);
-    const currentPeerUid = ref<number|null>(null);
-    const messages=ref<ChatMessageVO[]>([]);
-    const loading = ref(false);
+  const myUid = computed(() => getUserInfo()?.uid ?? null)
 
-    //获取当前登录的用户uid
-    const myUid= computed(()=>getUserInfo()?.uid??null)
+  const currentContact = computed(
+    () => contacts.value.find((c) => c.roomId === currentRoomId.value) ?? null
+  )
+ const groupInfo = ref<GroupInfoVO | null>(null)
+  const groupMembers = ref<GroupMemberVO[]>([])
+  const groupLoading = ref(false)
+  /** 当前会话是不是群聊 */
+  const isGroupChat = computed(() => currentContact.value?.roomType === 1)
+  /** 我在这个群里的角色：1 群主 2 管理 3 成员 0 不在群 */
+  const myGroupRole = computed(
+    () => groupMembers.value.find((m) => m.uid === myUid.value)?.role ?? 0
+  )
 
-    const currentContact = computed(
-        ()=>contacts.value.find((c)=>c.roomId ===currentRoomId.value)??null
-    )
+  /*
+  是不是群主
+  */
+ const isGroupOwner = computed(()=>isGroupChat.value && myGroupRole.value === 1)
+ /**
+  * 是否是群主或者管理员
+  */
+ const canManageGroup = computed(()=>isGroupChat.value &&(myGroupRole.value === 1 || myGroupRole.value === 2))
 
-    /**
-     * 初始化ing
-     */
-    async function init(){
-        currentRoomId.value=null
-        currentPeerUid.value=null
-        messages.value=[]
-        await fetchContacts();
+
+/** 拉群资料 + 成员（一次拿全） */
+  async function loadGroupInfo(roomId: number) {
+    groupLoading.value = true
+    try {
+      const [infoRes, memberRes] = await Promise.all([
+        getChatGroupInfo(roomId),
+        listChatGroupMembers(roomId),
+      ])
+      groupInfo.value = infoRes.data ?? null
+      groupMembers.value = memberRes.data ?? []
+    } finally {
+      groupLoading.value = false
     }
+  }
+  /** 清空群状态（切到单聊或退出群时用） */
+  function clearGroupInfo() {
+    groupInfo.value = null
+    groupMembers.value = []
+  }
+  // ==================== 群管理动作 ====================
 
-    /**
-     * 获取联系人列表的一个写法
-     */
-    async function fetchContacts(){
-        //首先获取聊天联系人这一个接口
-        const res= await listChatContacts()
-        contacts.value = res.data??[]
+  
+  async function renameGroup(name: string) {
+    if (currentRoomId.value == null) return false
+    const res = await updateChatGroupName(currentRoomId.value, name.trim())
+    if (res.code === 0 || res.code === 200) {
+      if (groupInfo.value) groupInfo.value.groupName = name.trim()
+      // 会话列表里的群名也要跟着变
+      const hit = contacts.value.find((c) => c.roomId === currentRoomId.value)
+      if (hit) hit.name = name.trim()
     }
-
-    /**消息中心：点击某一行消息 */
-    async function openByRoomId(roomId:number){
-        //首先判断联系人是否是符合这个条件的
-        // 联系人的roomId是否等于，等于就找到对应的roomId
-        const hit = contacts.value.find((c)=>c.roomId === roomId)
-        currentRoomId.value = roomId
-        //根据roomId获取到对应的对象
-        currentPeerUid.value = hit?.peerUid??null
-        //接下来要获取这个room的详细信息
-        await fetchMessages(roomId);
-        //标记已读
-        await markChatRead(roomId);
+    return res.code === 0 || res.code === 200
+  }
+  async function changeGroupNotice(notice: string) {
+    if (currentRoomId.value == null) return false
+    const res = await updateChatGroupNotice(currentRoomId.value, notice)
+    if ((res.code === 0 || res.code === 200) && groupInfo.value) {
+      groupInfo.value.notice = notice
     }
-
-    /** 空间页「发消息」：只带 peerUid 
-     * 这个方法是根据peerUid获取值，可以点击用户的头像然后和她发起聊天
-    */
-    async function openByPeerUid(peerUid: number) {
-        await fetchContacts()
-        const hit = contacts.value.find((c) => c.peerUid === peerUid)
-
-        currentPeerUid.value = peerUid
-        
-        //如果不是NULL就打开和他的聊天窗口
-        if (hit?.roomId != null) {
-            await openByRoomId(hit.roomId)
-            return
-        }
-        // 还没会话：空窗，等用户发第一条再建（后端 sendText 会处理）
-        currentRoomId.value = null
-        messages.value = []
+    return res.code === 0 || res.code === 200
+  }
+  async function changeGroupAvatar(file: File) {
+    if (currentRoomId.value == null) return false
+    const res = await uploadChatGroupAvatar(currentRoomId.value, file)
+    if ((res.code === 0 || res.code === 200) && groupInfo.value) {
+      groupInfo.value.groupAvatar = res.data
+    }
+    return res.code === 0 || res.code === 200
+  }
+  async function inviteMembers(uids: number[]) {
+    if (currentRoomId.value == null) return false
+    const res = await inviteChatGroupMembers(currentRoomId.value, uids)
+    if (res.code === 0 || res.code === 200) {
+      await loadGroupInfo(currentRoomId.value)
+    }
+    return res.code === 0 || res.code === 200
+  }
+  async function kickMember(targetUid: number) {
+    if (currentRoomId.value == null) return false
+    const res = await kickChatGroupMember(currentRoomId.value, targetUid)
+    if (res.code === 0 || res.code === 200) {
+      groupMembers.value = groupMembers.value.filter((m) => m.uid !== targetUid)
+      if (groupInfo.value?.memberCount) groupInfo.value.memberCount--
+    }
+    return res.code === 0 || res.code === 200
+  }
+  async function setMemberRole(targetUid: number, role: number) {
+    if (currentRoomId.value == null) return false
+    const res = await setChatGroupMemberRole(currentRoomId.value, targetUid, role)
+    if (res.code === 0 || res.code === 200) {
+      const hit = groupMembers.value.find((m) => m.uid === targetUid)
+      if (hit) hit.role = role
+    }
+    return res.code === 0 || res.code === 200
+  }
+  /** 退出群聊 */
+  async function quitCurrentGroup() {
+    if (currentRoomId.value == null) return false
+    const roomId = currentRoomId.value
+    const res = await quitChatGroup(roomId)
+    if (res.code === 0 || res.code === 200) {
+      contacts.value = contacts.value.filter((c) => c.roomId !== roomId)
+      currentRoomId.value = null
+      currentPeerUid.value = null
+      messages.value = []
+      clearGroupInfo()
+      await fetchContacts()
+    }
+    return res.code === 0 || res.code === 200
+  }
+  /** 解散群聊（群主） */
+  async function dissolveCurrentGroup() {
+    if (currentRoomId.value == null) return false
+    const roomId = currentRoomId.value
+    const res = await dissolveChatGroup(roomId)
+    if (res.code === 0 || res.code === 200) {
+      contacts.value = contacts.value.filter((c) => c.roomId !== roomId)
+      currentRoomId.value = null
+      currentPeerUid.value = null
+      messages.value = []
+      clearGroupInfo()
+      await fetchContacts()
+    }
+    return res.code === 0 || res.code === 200
   }
 
+  async function init() {
+    currentRoomId.value = null
+    currentPeerUid.value = null
+    messages.value = []
+    await fetchContacts()
+  }
 
+  async function fetchContacts() {
+    const res = await listChatContacts()
+    contacts.value = res.data ?? []
+  }
 
-    async function fetchMessages(roomId: number) {
-        loading.value = true
-        try {
-            const res = await listChatMessages(roomId, 50)
-            messages.value = res.data ?? []
-        } finally {
-            loading.value = false
-        }
+  async function openByRoomId(roomId: number) {
+    const hit = contacts.value.find((c) => c.roomId === roomId)
+    currentRoomId.value = roomId
+    currentPeerUid.value = hit?.peerUid ?? null
+    await fetchMessages(roomId)
+    await markChatRead(roomId)
+    if (hit) hit.unreadCount = 0
+  }
+
+  /** 空间页私信，只找单聊 */
+  async function openByPeerUid(peerUid: number) {
+    await fetchContacts()
+    const hit = contacts.value.find(
+      (c) => c.roomType === 2 && c.peerUid === peerUid
+    )
+    currentPeerUid.value = peerUid
+    if (hit?.roomId != null) {
+      await openByRoomId(hit.roomId)
+      return
+    }
+    currentRoomId.value = null
+    messages.value = []
+  }
+
+  async function fetchMessages(roomId: number) {
+    loading.value = true
+    try {
+      const res = await listChatMessages(roomId, 50)
+      messages.value = res.data ?? []
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function sendText(content: string) {
+    const text = content.trim()
+    if (!text) return
+
+    const contact = currentContact.value
+    if (contact?.roomType === 1 && currentRoomId.value != null) {
+      await sendChatGroupText({ roomId: currentRoomId.value, content: text })
+    } else if (currentPeerUid.value != null) {
+      await sendChatText({ targetUid: currentPeerUid.value, content: text })
+    } else {
+      return
     }
 
-    async function sendText(content:string){
-        const text = content.trim();
-        if(!text || currentPeerUid.value == null){
-            return
-        }
-        await sendChatText({ targetUid: currentPeerUid.value,
-             content: text })
-
-        //然后就是发送完毕消息，之后会话要刷新
-        await fetchContacts();
-        if (currentRoomId.value == null) {
-      const hit = contacts.value.find((c) => c.peerUid === currentPeerUid.value)
+    await fetchContacts()
+    if (currentRoomId.value == null) {
+      const hit = contacts.value.find(
+        (c) => c.roomType === 2 && c.peerUid === currentPeerUid.value
+      )
       if (hit?.roomId != null) currentRoomId.value = hit.roomId
     }
     if (currentRoomId.value != null) {
@@ -104,7 +229,7 @@ export const useChatStore = defineStore('chat',()=>{
     }
   }
 
-return {
+  return {
     contacts,
     currentRoomId,
     currentPeerUid,
@@ -118,6 +243,10 @@ return {
     openByPeerUid,
     fetchMessages,
     sendText,
+
+    // 和群聊的消息相关的接口
+
+
+
   }
-    }
-)
+})

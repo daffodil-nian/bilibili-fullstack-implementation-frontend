@@ -1,15 +1,26 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../../../stores/chat'
 import MsgBubble from '../MsgBubble.vue'
 import MsgInput from '../MsgInput.vue'
 import EmptyHint from '../EmptyHint.vue'
+import GroupInfoDrawer from '../../../../components/chat/GroupInfoDrawer.vue'
 import type { ChatMessageVO } from '../../../../services/types.ts'
 import { getUserInfo } from '../../../../services/userStorage.ts'
 import { formatMsgTime } from '../../../../utils/time'
+import dayjs from 'dayjs'
+
 const chatStore = useChatStore()
 const { messages, loading, myUid, currentContact, currentPeerUid } = storeToRefs(chatStore)
-import dayjs from 'dayjs'
+
+// 聊天信息抽屉开关
+const showInfo = ref(false)
+
+/** 点群名 / 点 ⋯ 打开聊天信息（仅群聊） */
+function openInfo() {
+  if (currentContact.value?.roomType === 1) showInfo.value = true
+}
 
 function shouldShowTime(i: number) {
   const list = messages.value
@@ -23,55 +34,55 @@ async function onSend(text: string) {
   await chatStore.sendText(text)
 }
 
-//获取头像，跟据uid获取到对应的头像！！！
-function avatarOf(m:ChatMessageVO){
-const me = getUserInfo()
-if (m.fromUid === me?.uid) return me?.avatar || ''
-  return currentContact.value?.peerAvatar || ''
+function avatarOf(m: ChatMessageVO) {
+  const me = getUserInfo()
+  if (m.fromUid === me?.uid) return me?.avatar || ''
+  // return currentContact.value?.avatar || ''
+return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头像
 }
 </script>
 
 <template>
   <section class="chat-window">
-    <EmptyHint v-if="currentPeerUid == null && currentContact == null" />
+    <EmptyHint v-if="currentContact == null && currentPeerUid == null" />
 
     <template v-else>
       <header class="chat-header">
-        {{ currentContact?.peerNickname || `用户${currentPeerUid}` }}
+        <span class="chat-title" @click="openInfo">
+          {{ currentContact?.name || (currentContact?.roomType === 1 ? '群聊' : `用户${currentPeerUid}`) }}
+        </span>
+        <span class='more-btn' @click="openInfo">⋯</span>
       </header>
 
       <div class="chat-body">
         <div v-if="loading" class="loading">加载中...</div>
-        <!-- <template v-else>
-          <div v-if="!messages.length" class="empty-msg">发一条消息开始聊天吧</div>
-          
+        <template v-for="(m, i) in messages" :key="m.msgId">
+          <div v-if="shouldShowTime(i)" class="time-label">
+            {{ formatMsgTime(m.createTime) }}
+          </div>
           <MsgBubble
-            v-for="m in messages"
-            :key="m.msgId"
             :content="m.content || ''"
             :mine="m.fromUid === myUid"
             :avatar="avatarOf(m)"
           />
-        </template> -->
-        <template v-for="(m, i) in messages" :key="m.msgId">
-  <div v-if="shouldShowTime(i)" class="time-label">
-    {{ formatMsgTime(m.createTime) }}
-  </div>
-  <MsgBubble
-    :content="m.content || ''"
-    :mine="m.fromUid === myUid"
-    :avatar="avatarOf(m)"
-  />
-</template>
+        </template>
       </div>
 
       <MsgInput @send="onSend" />
+
+      <GroupInfoDrawer
+        :visible="showInfo"
+        :room-id="currentContact?.roomId"
+        v-if="currentContact?.roomType === 1"
+        @close="showInfo = false"
+      />
     </template>
   </section>
 </template>
 
 <style lang="scss" scoped>
 .chat-window {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
@@ -106,4 +117,27 @@ if (m.fromUid === me?.uid) return me?.avatar || ''
   font-size: 12px;
   margin: 16px 0 10px;
 }
+.chat-title {
+  cursor: pointer;
+}
+.chat-title:hover {
+  color: #FB7299;
+}
+
+.more-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FBD6E2;
+  border-radius: 5px;
+  background: #FFF5F8;
+  color: #FB7299;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
 </style>

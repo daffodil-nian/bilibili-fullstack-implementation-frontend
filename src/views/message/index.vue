@@ -35,3 +35,6 @@ onMounted(async () => {
     background-color: #d6eaea;
   }
 </style>
+
+<!-- milimili 聊天面板主题：只做视觉覆盖，不改任何逻辑 -->
+<style lang="scss" src="./milimili-theme.scss"></style>

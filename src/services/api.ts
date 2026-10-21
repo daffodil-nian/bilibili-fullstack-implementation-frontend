@@ -2,7 +2,7 @@
 import { get, post, put, postForm } from './request'
 import urls from './urls'
 import type { UserBaseInfo, UpdateSignatureReq, UserFollowReq, ContactItemVO, ChatMessageVO } from './types'
-import type {UserSpaceVO,UserPrivacyVO, UserSimpleVO, SearchAllParams, SearchAllResult,LoginParams,LoginResult,RegisterParams} from './types'
+import type {UserSpaceVO,UserPrivacyVO, UserSimpleVO, SearchAllParams, SearchAllResult,LoginParams,LoginResult,RegisterParams,GroupInfoVO,GroupMemberVO} from './types'
 import { updateUserField } from './userStorage'
 export { SearchType } from './types'
 export type {
@@ -132,18 +132,79 @@ export function searchAll(params: SearchAllParams) {
 /**
  * 聊天通讯功能
  */
-export function listChatContacts(){
+/**
+ * 聊天通讯功能
+ */
+export function listChatContacts() {
   return get(urls.chatContacts) as Promise<ApiResponse<ContactItemVO[]>>
 }
-export function listChatMessages(roomId:number,limit=50){
-  return get(urls.chatMessages,{roomId,limit}) as Promise<ApiResponse<ChatMessageVO[]>>
+export function listChatMessages(roomId: number, limit = 50) {
+  return get(urls.chatMessages, { roomId, limit }) as Promise<ApiResponse<ChatMessageVO[]>>
 }
-export function sendChatText(body:{targetUid:number;content:string}){
-  return post(urls.chatSendText,body) as Promise<ApiResponse<number>>
+export function sendChatText(body: { targetUid: number; content: string }) {
+  return post(urls.chatSendText, body) as Promise<ApiResponse<number>>
 }
-export function markChatRead(roomId:number){
+export function sendChatGroupText(body: { roomId: number; content: string }) {
+  return post(urls.chatSendGroupText, body) as Promise<ApiResponse<number>>
+}
+export function createChatGroup(body: { name: string; memberUids: number[] }) {
+  return post(urls.chatCreateGroup, body) as Promise<ApiResponse<number>>
+}
+export function markChatRead(roomId: number) {
   return post(`${urls.chatRead}?roomId=${roomId}`) as Promise<ApiResponse<void>>
 }
+
+
+
+/**
+ * 群聊管理功能
+ */
+/** 群资料 */
+  export function getChatGroupInfo(roomId: number) {
+    return get(urls.chatGroupInfo(roomId)) as Promise<ApiResponse<GroupInfoVO>>
+  }
+  /** 群成员列表 */
+  export function listChatGroupMembers(roomId: number) {
+    return get(urls.chatGroupMembers(roomId)) as Promise<ApiResponse<GroupMemberVO[]>>
+  }
+  /** 改群名 */
+  export function updateChatGroupName(roomId: number, name: string) {
+    return put(urls.chatGroupName(roomId), { name }) as Promise<ApiResponse<boolean>>
+  }
+  /** 改群公告 */
+  export function updateChatGroupNotice(roomId: number, notice: string) {
+    return put(urls.chatGroupNotice(roomId), { notice }) as Promise<ApiResponse<boolean>>
+  }
+  /** 上传群头像（返回新的头像 URL） */
+  export function uploadChatGroupAvatar(roomId: number, file: File) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return postForm(urls.chatGroupAvatar(roomId), fd) as Promise<ApiResponse<string>>
+  }
+  /** 邀请成员 */
+  export function inviteChatGroupMembers(roomId: number, uids: number[]) {
+    return post(urls.chatGroupInvite(roomId), { uids }) as Promise<ApiResponse<boolean>>
+  }
+  /** 移出成员 */
+  export function kickChatGroupMember(roomId: number, targetUid: number) {
+    return post(urls.chatGroupKick(roomId, targetUid), {}) as Promise<ApiResponse<boolean>>
+  }
+  /** 退出群聊 */
+  export function quitChatGroup(roomId: number) {
+    return post(urls.chatGroupQuit(roomId), {}) as Promise<ApiResponse<boolean>>
+  }
+  /** 解散群聊 */
+  export function dissolveChatGroup(roomId: number) {
+    return post(urls.chatGroupDissolve(roomId), {}) as Promise<ApiResponse<boolean>>
+  }
+  /** 设置/取消管理员：role 2=管理员 3=普通成员 */
+  export function setChatGroupMemberRole(roomId: number, targetUid: number, role: number) {
+    return put(urls.chatGroupRole(roomId, targetUid), { role }) as Promise<ApiResponse<boolean>>
+  }
+
+
+
+
 
 
 // ==================== 默认导出 ====================
@@ -162,6 +223,23 @@ export default {
   listFans,
   listChatContacts,
   listChatMessages,
+  sendChatText,
+  createChatGroup,
+  sendChatGroupText,
+  markChatRead,
+
+  //群聊管理接口
+  getChatGroupInfo,
+  listChatGroupMembers,
+  updateChatGroupName,
+  updateChatGroupNotice,
+  uploadChatGroupAvatar,
+  inviteChatGroupMembers,
+  kickChatGroupMember,
+  quitChatGroup,
+  dissolveChatGroup,
+  setChatGroupMemberRole,
+
 
   // changeAvatar
 }

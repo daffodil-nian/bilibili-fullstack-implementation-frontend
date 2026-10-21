@@ -220,15 +220,15 @@ export interface UserFollowReq{
 // 聊天功能相关的类型定义
 
 export interface ContactItemVO{
-  roomId?:number
-  peerUid?:number
-  peerNickname?:string
-  peerAvatar?:string
-  lastMsgId?:number
-  lastContent?:string
-  unreadCount?:number
-  activeTime?:string
-
+    roomId?: number
+  roomType?: number   // 1群 2单聊
+  name?: string
+  avatar?: string | null
+  peerUid?: number | null
+  lastMsgId?: number
+  lastContent?: string
+  unreadCount?: number
+  activeTime?: string
 }
 
 export interface ChatMessageVO{
@@ -238,8 +238,32 @@ export interface ChatMessageVO{
   content?:string
   type?:number
   createTime?:string
+  fromNickname?:string
+  fromAvatar?:string
   
 }
 
-
+/** 群资料（对应后端 domain/vo/response/GroupInfoVO） */
+export interface GroupInfoVO {
+  roomId: number
+  groupName: string
+  groupAvatar?: string | null
+  /** 群主 uid */
+  userId?: number | null
+  /** 群公告 */
+  notice?: string | null
+  memberCount?: number
+  createTime?: string
+  updateTime?: string
+}
+/** 群成员（对应后端 domain/vo/chat/GroupMemberVO） */
+export interface GroupMemberVO {
+  uid: number
+  name: string
+  avatar?: string | null
+  /** 1 群主 2 管理员 3 普通成员 */
+  role: number
+  /** 1 在群 3 已移出 */
+  status: number
+}
 //  表情包管理模块
