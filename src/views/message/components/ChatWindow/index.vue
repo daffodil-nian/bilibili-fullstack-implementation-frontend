@@ -6,6 +6,8 @@ import MsgBubble from '../MsgBubble.vue'
 import MsgInput from '../MsgInput.vue'
 import EmptyHint from '../EmptyHint.vue'
 import GroupInfoDrawer from '../../../../components/chat/GroupInfoDrawer.vue'
+import SystemTip from '../../../../components/chat/SystemTip.vue'
+import GroupInviteCard from '../GroupInviteCard.vue'
 import type { ChatMessageVO } from '../../../../services/types.ts'
 import { getUserInfo } from '../../../../services/userStorage.ts'
 import { formatMsgTime } from '../../../../utils/time'
@@ -60,7 +62,20 @@ return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头�
           <div v-if="shouldShowTime(i)" class="time-label">
             {{ formatMsgTime(m.createTime) }}
           </div>
+          <!-- 系统消息（type=100）：居中灰字，无头像 -->
+          <SystemTip v-if="m.type === 100" :content="m.content || ''" />
+
+          <!-- 群邀请卡片（type=101）：带同意/拒绝按钮 -->
+          <GroupInviteCard
+            v-else-if="m.type === 101"
+            :msg-id="m.msgId"
+            :content="m.content || ''"
+            :mine="m.fromUid === myUid"
+          />
+
+          <!-- 普通消息：气泡 -->
           <MsgBubble
+            v-else
             :content="m.content || ''"
             :mine="m.fromUid === myUid"
             :avatar="avatarOf(m)"

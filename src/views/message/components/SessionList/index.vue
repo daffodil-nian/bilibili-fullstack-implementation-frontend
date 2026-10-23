@@ -71,6 +71,26 @@ async function submitCreate() {
   if (res.data) await chatStore.openByRoomId(res.data)
 }
 
+/**
+ * 会话列表预览文案
+ * 卡片消息的 content 是一段 JSON，不能直接显示，否则会出现
+ * {"roomId":23,"groupName":"..."} 这种原始内容
+ */
+function previewOf(c: { lastContent?: string | null }) {
+  const raw = (c.lastContent || '').trim()
+  if (!raw) return ''
+  if (raw.startsWith('{')) {
+    try {
+      const o = JSON.parse(raw)
+      if (o && o.groupName) return `[群邀请] ${o.groupName}`
+    } catch {
+      /* 不是 JSON，继续走下面 */
+    }
+    return '[卡片消息]'
+  }
+  return raw
+}
+
 function onSelect(roomId?: number) {
   if (roomId == null) return
   chatStore.openByRoomId(roomId)
@@ -103,7 +123,7 @@ function onSelect(roomId?: number) {
           <span class="name">{{ c.name || (c.roomType === 1 ? '群聊' : `用户${c.peerUid}`) }}</span>
           <span v-if="c.unreadCount" class="badge">{{ c.unreadCount }}</span>
         </div>
-        <div class="last">{{ c.lastContent || '' }}</div>
+        <div class="last">{{ previewOf(c) }}</div>
       </div>
     </button>
   </aside>

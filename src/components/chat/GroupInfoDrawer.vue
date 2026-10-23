@@ -16,6 +16,7 @@ import { message } from 'ant-design-vue'
 import { get, post, put, postForm } from '../../services/request'
 import { getUserInfo } from '../../services/userStorage'
 import defaultAvatar from '../../assets/avatar/default.png'
+import InviteMemberModal from '../../views/message/components/InviteMemberModal.vue'
 
 interface GroupInfo {
   roomId: number
@@ -44,6 +45,9 @@ const members = ref<GroupMember[]>([])
 const loading = ref(false)
 const usingDemo = ref(false)
 const errorText = ref('')
+
+// 邀请成员弹窗开关
+const showInvite = ref(false)
 
 const myUid = computed(() => getUserInfo()?.uid ?? 0)
 const me = computed(() => members.value.find(m => m.uid === myUid.value) || null)
@@ -200,16 +204,14 @@ async function onToggleAdmin(m: GroupMember) {
 }
 
 /* ---------------- 邀请 ---------------- */
-async function onInvite() {
-  const raw = window.prompt('输入要邀请的 uid，多个用英文逗号分隔')
-  if (!raw) return
-  const uids = raw.split(',').map(s => Number(s.trim())).filter(n => n > 0)
-  if (!uids.length) return
-  try {
-    await post(`${API}/${props.roomId}/members`, { uids })
-    message.success('已邀请')
-    load()
-  } catch { /* ignore */ }
+/** 打开邀请弹窗（从我的粉丝里勾选，最多 9 个） */
+function onInvite() {
+  showInvite.value = true
+}
+
+/** 邀请成功后刷新成员列表 */
+function onInvited() {
+  load()
 }
 
 /* ---------------- 退出 / 解散 ---------------- */
@@ -312,6 +314,15 @@ async function onDissolve() {
       <button v-if="isOwner" class="danger" @click="onDissolve">解散群聊</button>
       <button v-else class="danger" @click="onQuit">退出群聊</button>
     </div>
+
+    <!-- 邀请成员弹窗：从我的粉丝里勾选，最多 9 个 -->
+    <InviteMemberModal
+      :visible="showInvite"
+      :room-id="roomId"
+      :existing-uids="members.map(m => m.uid)"
+      @close="showInvite = false"
+      @success="onInvited"
+    />
   </div>
 </template>
 
