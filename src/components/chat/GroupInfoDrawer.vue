@@ -17,6 +17,7 @@ import { get, post, put, postForm } from '../../services/request'
 import { getUserInfo } from '../../services/userStorage'
 import defaultAvatar from '../../assets/avatar/default.png'
 import InviteMemberModal from '../../views/message/components/InviteMemberModal.vue'
+import EditNoticeModal from '../../views/message/components/EditNoticeModal.vue'
 
 interface GroupInfo {
   roomId: number
@@ -48,6 +49,9 @@ const errorText = ref('')
 
 // 邀请成员弹窗开关
 const showInvite = ref(false)
+
+// 群公告编辑弹窗开关
+const showNotice = ref(false)
 
 const myUid = computed(() => getUserInfo()?.uid ?? 0)
 const me = computed(() => members.value.find(m => m.uid === myUid.value) || null)
@@ -214,6 +218,11 @@ function onInvited() {
   load()
 }
 
+/** 公告保存成功：直接更新本地状态，不用重新请求 */
+function onNoticeSaved(notice: string) {
+  info.value = { ...(info.value as GroupInfo), notice }
+}
+
 /* ---------------- 退出 / 解散 ---------------- */
 async function onQuit() {
   if (!window.confirm('确定退出该群聊？')) return
@@ -298,8 +307,14 @@ async function onDissolve() {
 
       <!-- 群公告 -->
       <div class="gi-notice">
-        <div class="h">群公告</div>
-        <div class="c">{{ info?.notice || '暂无公告' }}</div>
+        <div class="notice-hd">
+          <span class="h">群公告</span>
+          <span v-if="canManage" class="notice-edit" @click="showNotice = true">编辑</span>
+        </div>
+        <div v-if="info?.notice" class="c">{{ info.notice }}</div>
+        <div v-else class="c empty" @click="canManage && (showNotice = true)">
+          {{ canManage ? '还没有公告，点「编辑」写一条吧' : '暂无公告' }}
+        </div>
       </div>
 
       <!-- 设置（仅展示） -->
@@ -322,6 +337,15 @@ async function onDissolve() {
       :existing-uids="members.map(m => m.uid)"
       @close="showInvite = false"
       @success="onInvited"
+    />
+
+    <!-- 群公告编辑弹窗 -->
+    <EditNoticeModal
+      :visible="showNotice"
+      :room-id="roomId"
+      :notice="info?.notice"
+      @close="showNotice = false"
+      @saved="onNoticeSaved"
     />
   </div>
 </template>
@@ -509,8 +533,41 @@ $t4: #b9bcc2;
   padding: 10px 16px 14px;
   border-top: 2px solid $line;
   border-bottom: 2px solid $line;
-  .h { font-size: 12px; color: $t3; margin-bottom: 4px; }
-  .c { font-size: 13px; color: $t2; line-height: 1.6; }
+
+  .notice-hd {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .h { font-size: 12px; color: $t3; font-weight: 600; }
+
+  .notice-edit {
+    margin-left: auto;
+    font-size: 11px;
+    color: $pink;
+    border: 1px solid $pink-line;
+    background: $pink-soft;
+    border-radius: 4px;
+    padding: 1px 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    &:hover { background: #ffe9f0; }
+  }
+
+  .c {
+    font-size: 13px;
+    color: $t2;
+    line-height: 1.75;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    &.empty {
+      color: $t4;
+      cursor: pointer;
+    }
+  }
 }
 
 .gi-settings { padding: 6px 0; }

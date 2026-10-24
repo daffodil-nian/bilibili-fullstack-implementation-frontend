@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref ,computed} from 'vue'
 import { storeToRefs } from 'pinia'
 import { useChatStore } from '../../../../stores/chat'
 import MsgBubble from '../MsgBubble.vue'
@@ -18,6 +18,11 @@ const { messages, loading, myUid, currentContact, currentPeerUid } = storeToRefs
 
 // 聊天信息抽屉开关
 const showInfo = ref(false)
+/** 群被退出/解散后：关闭抽屉 + 刷新会话列表 + 清空右侧 */
+async function onGroupUpdated() {
+  showInfo.value = false
+  await chatStore.handleRoomRemoved(currentContact.value?.roomId)
+}
 
 /** 点群名 / 点 ⋯ 打开聊天信息（仅群聊） */
 function openInfo() {
@@ -33,6 +38,7 @@ function shouldShowTime(i: number) {
   return cur.diff(prev, 'minute') >= 5
 }
 async function onSend(text: string) {
+  if (!canSend.value) return
   await chatStore.sendText(text)
 }
 
@@ -42,6 +48,10 @@ function avatarOf(m: ChatMessageVO) {
   // return currentContact.value?.avatar || ''
 return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头像
 }
+
+//回去改
+const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roomId))
+
 </script>
 
 <template>
@@ -63,7 +73,7 @@ return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头�
             {{ formatMsgTime(m.createTime) }}
           </div>
           <!-- 系统消息（type=100）：居中灰字，无头像 -->
-          <SystemTip v-if="m.type === 100" :content="m.content || ''" />
+          <SystemTip v-if="m.type === 4 || m.type === 100" :content="m.content || ''" />
 
           <!-- 群邀请卡片（type=101）：带同意/拒绝按钮 -->
           <GroupInviteCard
@@ -83,13 +93,20 @@ return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头�
         </template>
       </div>
 
-      <MsgInput @send="onSend" />
+      <MsgInput
+        :disabled="!canSend"
+        :disabled-text="currentContact?.roomType === 1
+          ? '你已不在该群聊中，无法发送消息'
+          : '暂时无法发送消息'"
+        @send="onSend"
+      />
 
       <GroupInfoDrawer
         :visible="showInfo"
         :room-id="currentContact?.roomId"
         v-if="currentContact?.roomType === 1"
         @close="showInfo = false"
+          @updated="onGroupUpdated"
       />
     </template>
   </section>

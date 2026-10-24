@@ -177,6 +177,7 @@ export const useChatStore = defineStore("chat", () => {
     await fetchMessages(roomId)
     await markChatRead(roomId)
     if (hit) hit.unreadCount = 0
+    if (hit?.roomType === 1) await syncGroupMembership(roomId)
   }
 
   /** 空间页私信，只找单聊 */
@@ -229,6 +230,54 @@ export const useChatStore = defineStore("chat", () => {
     }
   }
 
+  /** 群被退出/解散后：清掉本地状态并刷新会话列表 */
+  async function handleRoomRemoved(roomId?: number | null) {
+    await fetchContacts()
+    if (roomId == null) return
+    markRoomLeft(roomId)
+    const still = contacts.value.some((c) => c.roomId === roomId)
+    if (!still && currentRoomId.value === roomId) {
+      currentRoomId.value = null
+      currentPeerUid.value = null
+      messages.value = []
+      clearGroupInfo()
+    }
+  }
+  // ===== 我已不在的群（退群 / 被移出 / 群已解散）→ 用于禁用输入框 =====
+  const leftRoomIds = ref<Set<number>>(new Set())
+
+  function markRoomLeft(roomId: number) {
+    const s = new Set(leftRoomIds.value)
+    s.add(roomId)
+    leftRoomIds.value = s
+  }
+
+  function unmarkRoomLeft(roomId: number) {
+    const s = new Set(leftRoomIds.value)
+    s.delete(roomId)
+    leftRoomIds.value = s
+  }
+
+  /** 能不能在这个房间发言 */
+  function canSendInRoom(roomId?: number | null) {
+    if (roomId == null) return false
+    return !leftRoomIds.value.has(roomId)
+  }
+
+  /** 打开群会话时校验我还在不在群里（刷新后也能识别） */
+  async function syncGroupMembership(roomId: number) {
+    if (myUid.value == null) return
+    try {
+      const res = await listChatGroupMembers(roomId)
+      const list = res.data ?? []
+      if (list.length === 0) return
+      const inGroup = list.some((m) => m.uid === myUid.value)
+      if (inGroup) unmarkRoomLeft(roomId)
+      else markRoomLeft(roomId)
+    } catch {
+      markRoomLeft(roomId)
+    }
+  }
   return {
     contacts,
     currentRoomId,
@@ -243,6 +292,10 @@ export const useChatStore = defineStore("chat", () => {
     openByPeerUid,
     fetchMessages,
     sendText,
+    handleRoomRemoved,
+    canSendInRoom,
+    leftRoomIds,
+    markRoomLeft,
 
     // 和群聊的消息相关的接口
 

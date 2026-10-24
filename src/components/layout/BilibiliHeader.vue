@@ -12,7 +12,7 @@
   :style="{ '--nav-bg-opacity': String(props.bgOpacity) }"">
     <!-- 1. 左侧导航区域 -->
     <div class="nav-left">
-      <div v-for="item in nav_left" :key="item.title" class="nav-item">
+      <div v-for="item in nav_left" :key="item.title" class="nav-item" @click="onNavLeftClick(item)">
         <component :is="item.icon" class="nav-icon" />
         <span class="nav-text">{{ item.title }}</span>
       </div>
@@ -260,6 +260,14 @@ const props = withDefaults(defineProps<{
   bgOpacity: 1
 })
 
+function onNavLeftClick(item:DataItem){
+  if(!item.path)return
+  // router.push(item.path)
+
+   const route = router.resolve(item.path)
+  window.open(route.href, '_blank')
+}
+
 function onNavRightClick(item:DataItem){
   if(!item.path)return
   // router.push(item.path)
@@ -480,7 +488,7 @@ const handleCancel = () => {
 
 // 静态数据配置
 const nav_left: DataItem[] = [
-  { title: '首页', icon: AliwangwangOutlined },
+  { title: '首页', icon: AliwangwangOutlined,path:"/" },
   { title: '番剧', icon: PlayCircleFilled },
   { title: '直播', icon: VideoCameraFilled },
   { title: '游戏中心', icon: AliwangwangOutlined },
