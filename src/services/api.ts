@@ -185,6 +185,8 @@ export function markChatRead(roomId: number) {
   export function inviteChatGroupMembers(roomId: number, uids: number[]) {
     return post(urls.chatGroupInvite(roomId), { uids }) as Promise<ApiResponse<boolean>>
   }
+
+  
   /** 移出成员 */
   export function kickChatGroupMember(roomId: number, targetUid: number) {
     return post(urls.chatGroupKick(roomId, targetUid), {}) as Promise<ApiResponse<boolean>>

@@ -18,6 +18,7 @@ import { getUserInfo } from '../../services/userStorage'
 import defaultAvatar from '../../assets/avatar/default.png'
 import InviteMemberModal from '../../views/message/components/InviteMemberModal.vue'
 import EditNoticeModal from '../../views/message/components/EditNoticeModal.vue'
+import KickConfirmModal from './KickConfirmModal.vue'
 
 interface GroupInfo {
   roomId: number
@@ -39,7 +40,11 @@ const props = defineProps<{ visible: boolean; roomId?: number | null }>()
 const emit = defineEmits<{ close: []; updated: [] }>()
 
 const API = '/api/chat/group'
+import type { GroupMemberVO } from '../../services/types.ts'
 
+// 移出成员确认弹窗
+const showKick = ref(false)
+const kickTarget = ref<GroupMemberVO | null>(null)
 /* ---------------- 状态 ---------------- */
 const info = ref<GroupInfo | null>(null)
 const members = ref<GroupMember[]>([])
@@ -187,16 +192,34 @@ async function onPickAvatar(e: Event) {
 }
 
 /* ---------------- 成员操作 ---------------- */
-async function onKick(m: GroupMember) {
+// async function onKick(m: GroupMember) {
+//   if (!canManage.value || m.uid === myUid.value || m.role === 1) return
+//   if (!window.confirm(`把「${m.name}」移出群聊？`)) return
+//   try {
+//     await post(`${API}/${props.roomId}/members/${m.uid}/remove`, {})
+//     members.value = members.value.filter(x => x.uid !== m.uid)
+//     message.success('已移出')
+//   } catch { /* ignore */ }
+// }
+/** 点「移出」→ 打开确认弹窗（不再用 window.confirm） */
+function onKick(m: GroupMember) {
   if (!canManage.value || m.uid === myUid.value || m.role === 1) return
-  if (!window.confirm(`把「${m.name}」移出群聊？`)) return
-  try {
-    await post(`${API}/${props.roomId}/members/${m.uid}/remove`, {})
-    members.value = members.value.filter(x => x.uid !== m.uid)
-    message.success('已移出')
-  } catch { /* ignore */ }
+  kickTarget.value = m
+  showKick.value = true
 }
 
+/** 弹窗确认成功：本地移除 + 人数 -1 */
+function onKickConfirmed(uid: number) {
+  members.value = members.value.filter((x) => x.uid !== uid)
+  if (info.value?.memberCount) info.value.memberCount--
+  kickTarget.value = null
+}
+
+/** 关闭弹窗 */
+function onKickClose() {
+  showKick.value = false
+  kickTarget.value = null
+}
 async function onToggleAdmin(m: GroupMember) {
   if (!isOwner.value || m.uid === myUid.value || m.role === 1) return
   const next = m.role === 2 ? 3 : 2
@@ -346,6 +369,14 @@ async function onDissolve() {
       :notice="info?.notice"
       @close="showNotice = false"
       @saved="onNoticeSaved"
+    />
+    <!-- 移出成员确认弹窗 -->
+    <KickConfirmModal
+      :visible="showKick"
+      :room-id="roomId"
+      :member="kickTarget"
+      @close="onKickClose"
+      @confirmed="onKickConfirmed"
     />
   </div>
 </template>
