@@ -24,25 +24,34 @@ defineProps<{
 </template>
 
 <style scoped>
-.system-tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 12px 16px;
-  padding: 0 16px;
-}
 
+.system-tip {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #9499a0;
+  margin: 8px auto;
+  padding: 0 24px;
+  max-width: 80%;
+  word-break: break-word;
+  user-select: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+}
 .txt {
   font-size: 12px;
   line-height: 1.6;
   color: #9499a0;
-  background: #f7f7f9;
-  border-radius: 4px;
-  padding: 2px 10px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
   text-align: center;
-  max-width: 70%;
-  word-break: break-all;
+  max-width: 100%;
+  word-break: break-word;
 }
 
 .t {

@@ -1,0 +1,230 @@
+<script setup lang="ts">
+import { ref ,computed} from 'vue'
+import { storeToRefs } from 'pinia'
+import { useChatStore } from '../../../../stores/chat'
+import MsgBubble from '../MsgBubble.vue'
+import MsgInput from '../MsgInput.vue'
+import EmptyHint from '../EmptyHint.vue'
+import GroupInfoDrawer from '../../../../components/chat/GroupInfoDrawer.vue'
+import SystemTip from '../../../../components/chat/SystemTip.vue'
+import GroupInviteCard from '../GroupInviteCard.vue'
+import type { ChatMessageVO } from '../../../../services/types.ts'
+import { getUserInfo } from '../../../../services/userStorage.ts'
+import { formatMsgTime } from '../../../../utils/time'
+import dayjs from 'dayjs'
+import MessageContextMenu from '../../../../components/chat/MessageContextMenu.vue'
+import { message } from 'ant-design-vue'
+
+const chatStore = useChatStore()
+const { messages, loading, myUid, currentContact, currentPeerUid } = storeToRefs(chatStore)
+
+// 聊天信息抽屉开关
+const showInfo = ref(false)
+/** 群被退出/解散后：关闭抽屉 + 刷新会话列表 + 清空右侧 */
+async function onGroupUpdated() {
+  showInfo.value = false
+  await chatStore.handleRoomRemoved(currentContact.value?.roomId)
+}
+
+// ===== 撤回 =====
+const menu = ref<{ x: number; y: number; msg: ChatMessageVO } | null>(null)
+
+/** 能不能撤回：我发的 + 没撤回 + 2 分钟内 */
+function canWithdraw(m: ChatMessageVO) {
+  if (!m.msgId || m.fromUid !== myUid.value) return false
+  if (m.status === 1) return false
+  if (!m.createTime) return false
+  // 保守用 110 秒，留 10 秒余量，避免边界上菜单可点但服务端已超时
+  return dayjs().diff(dayjs(m.createTime), 'second') < 110
+}
+
+function openMenu(e: MouseEvent, m: ChatMessageVO) {
+  if (!canWithdraw(m)) return
+  menu.value = { x: e.clientX, y: e.clientY, msg: m }
+}
+
+async function doWithdraw() {
+  const m = menu.value?.msg
+  menu.value = null
+  if (!m?.msgId) return
+  const ok = await chatStore.withdrawMessage(m.msgId)
+  if (ok) message.success('已撤回')
+}
+
+/** 点群名 / 点 ⋯ 打开聊天信息（仅群聊） */
+function openInfo() {
+  if (currentContact.value?.roomType === 1) showInfo.value = true
+}
+
+function shouldShowTime(i: number) {
+  const list = messages.value
+  if (i === 0) return true
+  const cur = dayjs(list[i].createTime)
+  const prev = dayjs(list[i - 1].createTime)
+  if (!cur.isValid() || !prev.isValid()) return false
+  return cur.diff(prev, 'minute') >= 5
+}
+async function onSend(text: string) {
+  if (!canSend.value) return
+  await chatStore.sendText(text)
+}
+
+function avatarOf(m: ChatMessageVO) {
+  const me = getUserInfo()
+  if (m.fromUid === me?.uid) return me?.avatar || ''
+  // return currentContact.value?.avatar || ''
+return m.fromAvatar || ''   // 用消息上的发送者头像，不要用群头像
+}
+
+//回去改
+const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roomId))
+
+</script>
+
+<template>
+  <section class="chat-window">
+    <EmptyHint v-if="currentContact == null && currentPeerUid == null" />
+
+    <template v-else>
+      <header class="chat-header">
+        <span class="chat-title" @click="openInfo">
+          {{ currentContact?.name || (currentContact?.roomType === 1 ? '群聊' : `用户${currentPeerUid}`) }}
+        </span>
+        <span class='more-btn' @click="openInfo">⋯</span>
+      </header>
+
+      <div class="chat-body">
+        <div v-if="loading" class="loading">加载中...</div>
+        <template v-for="(m, i) in messages" :key="m.msgId">
+  <div v-if="shouldShowTime(i)" class="time-label">
+    {{ formatMsgTime(m.createTime) }}
+  </div>
+
+  <!-- ★ 每条消息包一层，用于右键 -->
+  <div class="msg-item" @contextmenu.prevent="openMenu($event, m)">
+    <!-- ★ 已撤回：优先级最高，必须是第一个 -->
+    <div v-if="m.status === 1" class="msg-recalled">
+      {{ m.fromUid === myUid ? '你撤回了一条消息' : '对方撤回了一条消息' }}
+    </div>
+
+    <!-- 系统消息 -->
+    <SystemTip v-else-if="m.type === 4 || m.type === 100" :content="m.content || ''" />
+
+    <!-- 群邀请卡片 -->
+    <GroupInviteCard
+      v-else-if="m.type === 101"
+      :msg-id="m.msgId"
+      :content="m.content || ''"
+      :mine="m.fromUid === myUid"
+    />
+
+    <!-- 普通消息 -->
+    <MsgBubble
+      v-else
+      :content="m.content || ''"
+      :mine="m.fromUid === myUid"
+      :avatar="avatarOf(m)"
+    />
+  </div>
+</template>
+      </div>
+
+      <MsgInput
+        :disabled="!canSend"
+        :disabled-text="currentContact?.roomType === 1
+          ? '你已不在该群聊中，无法发送消息'
+          : '暂时无法发送消息'"
+        @send="onSend"
+      />
+
+      <GroupInfoDrawer
+        :visible="showInfo"
+        :room-id="currentContact?.roomId"
+        v-if="currentContact?.roomType === 1"
+        @close="showInfo = false"
+          @updated="onGroupUpdated"
+      />
+    </template>
+  </section>
+</template>
+
+<style lang="scss" scoped>
+.chat-window {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f4f5f7;
+}
+.chat-header {
+  height: 56px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #e3e5e7;
+  font-size: 15px;
+  font-weight: 600;
+}
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+.loading,
+.empty-msg {
+  padding: 24px;
+  text-align: center;
+  color: #9499a0;
+  font-size: 13px;
+}
+.time-label {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  margin: 16px 0 10px;
+}
+.chat-title {
+  cursor: pointer;
+}
+.chat-title:hover {
+  color: #FB7299;
+}
+
+.more-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FBD6E2;
+  border-radius: 5px;
+  background: #FFF5F8;
+  color: #FB7299;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+/* ★ 用 .chat-body 提高优先级，压过全局的 .chat-body div */
+.chat-body .recall-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 10px 0;
+
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: #a8adb5;          /* 关键：浅灰，不要继承黑色 */
+  user-select: none;
+}
+
+.chat-body .recall-tip .recall-icon {
+  flex: none;
+  opacity: 0.75;
+  margin-top: -1px;        /* 视觉居中微调 */
+}
+</style>

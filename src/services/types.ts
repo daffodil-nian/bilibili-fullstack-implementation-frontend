@@ -231,16 +231,17 @@ export interface ContactItemVO{
   activeTime?: string
 }
 
-export interface ChatMessageVO{
-  msgId?:number
-  roomId?:number
-  fromUid?:number
-  content?:string
-  type?:number
-  createTime?:string
-  fromNickname?:string
-  fromAvatar?:string
-  
+export interface ChatMessageVO {
+  msgId?: number
+  roomId?: number
+  fromUid?: number
+  content?: string
+  type?: number
+  createTime?: string
+  fromNickname?: string
+  fromAvatar?: string
+  /** 0 正常 1 已撤回 */
+  status?: number
 }
 
 /** 群资料（对应后端 domain/vo/response/GroupInfoVO） */

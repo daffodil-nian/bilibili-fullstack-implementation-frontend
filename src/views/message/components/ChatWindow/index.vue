@@ -12,6 +12,8 @@ import type { ChatMessageVO } from '../../../../services/types.ts'
 import { getUserInfo } from '../../../../services/userStorage.ts'
 import { formatMsgTime } from '../../../../utils/time'
 import dayjs from 'dayjs'
+import MessageContextMenu from '../../../../components/chat/MessageContextMenu.vue'
+import { message } from 'ant-design-vue'
 
 const chatStore = useChatStore()
 const { messages, loading, myUid, currentContact, currentPeerUid } = storeToRefs(chatStore)
@@ -22,6 +24,38 @@ const showInfo = ref(false)
 async function onGroupUpdated() {
   showInfo.value = false
   await chatStore.handleRoomRemoved(currentContact.value?.roomId)
+}
+
+// ===== 撤回 =====
+const menu = ref<{ x: number; y: number; msg: ChatMessageVO } | null>(null)
+
+/** 能不能撤回：我发的 + 没撤回 + 2 分钟内 */
+function canWithdraw(m: ChatMessageVO) {
+  if (!m.msgId || m.fromUid !== myUid.value) return false
+  if (m.status === 1) return false
+  if (!m.createTime) return false
+  // 保守用 110 秒，留 10 秒余量，避免边界上菜单可点但服务端已超时
+  return dayjs().diff(dayjs(m.createTime), 'second') < 110
+}
+
+function openMenu(e: MouseEvent, m: ChatMessageVO) {
+  if (!canWithdraw(m)) return
+  menu.value = { x: e.clientX, y: e.clientY, msg: m }
+}
+
+/** 直接撤回某一条（点按钮用，不走右键菜单） */
+async function withdrawOne(m: ChatMessageVO) {
+  if (!m.msgId) return
+  const ok = await chatStore.withdrawMessage(m.msgId)
+  if (ok) message.success('已撤回')
+}
+
+async function doWithdraw() {
+  const m = menu.value?.msg
+  menu.value = null
+  if (!m?.msgId) return
+  const ok = await chatStore.withdrawMessage(m.msgId)
+  if (ok) message.success('已撤回')
 }
 
 /** 点群名 / 点 ⋯ 打开聊天信息（仅群聊） */
@@ -69,28 +103,56 @@ const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roo
       <div class="chat-body">
         <div v-if="loading" class="loading">加载中...</div>
         <template v-for="(m, i) in messages" :key="m.msgId">
-          <div v-if="shouldShowTime(i)" class="time-label">
-            {{ formatMsgTime(m.createTime) }}
-          </div>
-          <!-- 系统消息（type=100）：居中灰字，无头像 -->
-          <SystemTip v-if="m.type === 4 || m.type === 100" :content="m.content || ''" />
+  <div v-if="shouldShowTime(i)" class="time-label">
+    {{ formatMsgTime(m.createTime) }}
+  </div>
 
-          <!-- 群邀请卡片（type=101）：带同意/拒绝按钮 -->
-          <GroupInviteCard
-            v-else-if="m.type === 101"
-            :msg-id="m.msgId"
-            :content="m.content || ''"
-            :mine="m.fromUid === myUid"
-          />
+  <!-- ★ 每条消息包一层，用于右键 -->
+  <div
+    class="msg-item"
+    :class="{
+      'is-mine': m.fromUid === myUid,
+      'is-system': m.status === 1 || m.type === 4 || m.type === 100 || m.type === 101,
+    }"
+    @contextmenu.prevent="openMenu($event, m)"
+  >
+    <!-- ★ 已撤回：优先级最高，必须是第一个 -->
+          <div v-if="m.status === 1" class="recall-tip">
+        <svg class="recall-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+          <path d="M8.5 2.5a5.5 5.5 0 1 0 5.5 5.5h-1.6A3.9 3.9 0 1 1 8.5 4.1V6L12 3 8.5 0v2.5z"
+                fill="currentColor" />
+        </svg>
+        <span>{{ m.fromUid === myUid ? '你' : '对方' }}撤回了一条消息</span>
+      </div>
 
-          <!-- 普通消息：气泡 -->
-          <MsgBubble
-            v-else
-            :content="m.content || ''"
-            :mine="m.fromUid === myUid"
-            :avatar="avatarOf(m)"
-          />
-        </template>
+    <!-- 系统消息 -->
+    <SystemTip v-else-if="m.type === 4 || m.type === 100" :content="m.content || ''" />
+
+    <!-- 群邀请卡片 -->
+    <GroupInviteCard
+      v-else-if="m.type === 101"
+      :msg-id="m.msgId"
+      :content="m.content || ''"
+      :mine="m.fromUid === myUid"
+    />
+
+    <!-- 普通消息 -->
+    <MsgBubble
+      v-else
+      :content="m.content || ''"
+      :mine="m.fromUid === myUid"
+      :avatar="avatarOf(m)"
+    />
+
+    <!-- ★ 撤回按钮：独立放在链末尾，绝不能插进上面的 v-if/v-else 链 -->
+    <span
+      v-if="canWithdraw(m)"
+      class="recall-btn"
+      title="撤回这条消息"
+      @click.stop="withdrawOne(m)"
+    >撤回</span>
+  </div>
+</template>
       </div>
 
       <MsgInput
@@ -107,6 +169,14 @@ const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roo
         v-if="currentContact?.roomType === 1"
         @close="showInfo = false"
           @updated="onGroupUpdated"
+      />
+      <!-- 右键菜单（撤回） -->
+      <MessageContextMenu
+        :visible="!!menu"
+        :x="menu?.x || 0"
+        :y="menu?.y || 0"
+        @close="menu = null"
+        @withdraw="doWithdraw"
       />
     </template>
   </section>
@@ -144,10 +214,17 @@ const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roo
   font-size: 13px;
 }
 .time-label {
+  display: block;
   text-align: center;
-  color: #999;
-  font-size: 12px;
-  margin: 16px 0 10px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  color: #b8bcc2;
+  margin: 16px 0 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  user-select: none;
 }
 .chat-title {
   cursor: pointer;
@@ -171,5 +248,93 @@ const canSend = computed(() => chatStore.canSendInRoom(currentContact.value?.roo
   font-size: 16px;
   line-height: 1;
 }
+/* ===== 撤回按钮：紧贴气泡左侧，全程不遮挡消息 ===== */
+.chat-body .msg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  /* 自己的消息贴右，别人的贴左 */
+  justify-content: flex-end;
+}
 
+.chat-body .msg-item:not(.is-mine) {
+  justify-content: flex-start;
+}
+
+/* 系统类消息（撤回提示 / 系统消息 / 群邀请卡）→ 整行居中 */
+.chat-body .msg-item.is-system {
+  justify-content: center;
+}
+
+/* ★ 关键：消息行按内容宽度收缩，不再撑满整行
+   （这样按钮才会紧贴气泡，而不是被推到最左边） */
+.chat-body .msg-item :deep(.row) {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* ★ 气泡用固定上限宽度替代 60% 百分比，
+   避免行宽 = 内容宽度时百分比自引用导致文字异常换行 */
+.chat-body .msg-item :deep(.bubble) {
+  max-width: 420px;
+  word-break: break-word;
+}
+
+.chat-body .msg-item .recall-btn {
+  flex: none;
+  order: -1;               /* ★ 排在消息行之前 → 视觉上紧贴气泡左侧 */
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #b8bcc2;
+  background: #fff;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.chat-body .msg-item:hover .recall-btn {
+  opacity: 1;
+}
+
+.chat-body .msg-item .recall-btn:hover {
+  color: #fb7299;
+  border-color: #fbd6e2;
+  background: #fff5f8;
+}
+
+.chat-body .msg-item .recall-btn:hover {
+  color: #fb7299;
+  border-color: #fbd6e2;
+  background: #fff5f8;
+}
+
+/* 撤回提示：三重类保证压过全局 div 样式 */
+.chat-body .msg-item .recall-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 8px 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+  color: #a8adb5;
+  background: none;
+  border: none;
+  box-shadow: none;
+  user-select: none;
+}
+
+.chat-body .msg-item .recall-tip .recall-icon {
+  flex: none;
+  margin-top: -1px;
+  opacity: 0.75;
+}
 </style>

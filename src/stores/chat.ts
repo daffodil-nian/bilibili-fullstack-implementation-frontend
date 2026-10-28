@@ -17,6 +17,7 @@ import {
   updateChatGroupName,
   listChatGroupMembers,
   getChatGroupInfo,
+  withdrawChatMessage
 } from "../services/api"
 import { getUserInfo } from "../services/userStorage"
 
@@ -210,24 +211,64 @@ export const useChatStore = defineStore("chat", () => {
     if (!text) return
 
     const contact = currentContact.value
-    if (contact?.roomType === 1 && currentRoomId.value != null) {
-      await sendChatGroupText({ roomId: currentRoomId.value, content: text })
-    } else if (currentPeerUid.value != null) {
-      await sendChatText({ targetUid: currentPeerUid.value, content: text })
-    } else {
+    const roomId = currentRoomId.value
+    const isGroup = contact?.roomType === 1 && roomId != null
+
+    if (!isGroup && currentPeerUid.value == null) return
+
+    // ===== ① 乐观插入：本地立刻显示，不等接口 =====
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const now = new Date()
+    const tempId = -Date.now()
+    const optimistic: ChatMessageVO = {
+      msgId: tempId,
+      roomId: roomId ?? undefined,
+      fromUid: myUid.value ?? undefined,
+      content: text,
+      type: 1,
+      status: 0,
+      createTime:
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+    }
+    messages.value.push(optimistic)
+
+    // ===== ② 后台发送 =====
+    let realId: number | undefined
+    try {
+      if (isGroup) {
+        const res = await sendChatGroupText({ roomId: roomId as number, content: text })
+        realId = (res.data as number) ?? undefined
+      } else {
+        const res = await sendChatText({
+          targetUid: currentPeerUid.value as number,
+          content: text,
+        })
+        realId = (res.data as number) ?? undefined
+      }
+    } catch {
+      // 发送失败 → 撤掉临时消息
+      messages.value = messages.value.filter((m) => m.msgId !== tempId)
       return
     }
 
-    await fetchContacts()
+    // ===== ③ 用真实 msgId 替换临时 id =====
+    if (realId != null) {
+      const hit = messages.value.find((m) => m.msgId === tempId)
+      if (hit) hit.msgId = realId
+    }
+
+    // 单聊首次发送可能还没有 roomId，补一次
     if (currentRoomId.value == null) {
-      const hit = contacts.value.find(
-        (c) => c.roomType === 2 && c.peerUid === currentPeerUid.value
+      await fetchContacts()
+      const c = contacts.value.find(
+        (x) => x.roomType === 2 && x.peerUid === currentPeerUid.value
       )
-      if (hit?.roomId != null) currentRoomId.value = hit.roomId
+      if (c?.roomId != null) currentRoomId.value = c.roomId
     }
-    if (currentRoomId.value != null) {
-      await fetchMessages(currentRoomId.value)
-    }
+
+    // ===== ④ 会话列表后台刷新（不阻塞输入框）=====
+    fetchContacts().catch(() => {})
   }
 
   /** 群被退出/解散后：清掉本地状态并刷新会话列表 */
@@ -278,6 +319,30 @@ export const useChatStore = defineStore("chat", () => {
       markRoomLeft(roomId)
     }
   }
+
+
+  /** 撤回自己发的一条消息（乐观更新，失败回滚） */
+  async function withdrawMessage(messageId: number) {
+    const m = messages.value.find((x) => x.msgId === messageId)
+    if (!m || m.roomId == null) return false
+
+    // 1. 乐观更新：UI 立刻变
+    const backup = { status: m.status, content: m.content }
+    m.status = 1
+    m.content = '[消息已撤回]'
+
+    // 2. 请求后端
+    const ok = await withdrawChatMessage(messageId, m.roomId)
+      .then((r) => r.code === 0 || r.code === 200)
+      .catch(() => false)
+
+    // 3. 失败回滚
+    if (!ok) {
+      m.status = backup.status
+      m.content = backup.content
+    }
+    return ok
+  }
   return {
     contacts,
     currentRoomId,
@@ -298,7 +363,7 @@ export const useChatStore = defineStore("chat", () => {
     markRoomLeft,
 
     // 和群聊的消息相关的接口
-
+ withdrawMessage,
 
 
   }

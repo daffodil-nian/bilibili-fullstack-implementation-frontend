@@ -205,7 +205,10 @@ export function markChatRead(roomId: number) {
   }
 
 
-
+/** 撤回消息 */
+export function withdrawChatMessage(messageId: number, roomId: number) {
+  return post(urls.chatWithdraw, { messageId, roomId }) as Promise<ApiResponse<boolean>>
+}
 
 
 
@@ -241,6 +244,8 @@ export default {
   quitChatGroup,
   dissolveChatGroup,
   setChatGroupMemberRole,
+
+  withdrawChatMessage
 
 
   // changeAvatar

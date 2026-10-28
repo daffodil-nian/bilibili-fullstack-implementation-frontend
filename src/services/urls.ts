@@ -39,6 +39,7 @@ export default {
   chatSendText: `/api/chat/send/text`,
   chatCreateGroup: `/api/chat/group/create`,
   chatSendGroupText: `/api/chat/send/group/text`,
+    chatWithdraw: '/api/chat/withdraw',
 
   /**
    * 群聊接口
@@ -68,5 +69,6 @@ export default {
   /** 设置管理员 */
   chatGroupRole: (roomId: number | string, targetUid: number | string) =>
     `/api/chat/group/${roomId}/members/${targetUid}/role`,
+  
 
 }
